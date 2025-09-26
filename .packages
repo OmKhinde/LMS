@@ -1,0 +1,16 @@
+react-router-dom    ->for routing
+react-youtube       ->for playing youtube videos
+uniqid              ->for generating hexadecimal ids for our courses
+quill                ->generate rich text for our course dicription
+humanize-duration    ->used to convert in hours,min and the seconds
+react-simple-star-rating   ->for giving reviews in stars
+rc-progress          ->help to design progress bar ,circular bar.
+
+context folder       -> for containing the state and function that we are using in entire application
+outlet tag in educator   -> for nested routes
+useMatch()              ->to match the routes 
+clerk                 ->for user authentication 
+e.preventdefault      -> for preventing the defalut relading after giving input
+
+
+dataflow   => from dummycourses of assets.js to coursesection and then from that through course prop to coursecard 
