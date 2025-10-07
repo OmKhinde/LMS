@@ -2,6 +2,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { dummyCourses } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
+import humanizeDuration from "humanize-duration";
+
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AppContext= createContext({});
@@ -10,10 +12,15 @@ export const AppcontextProvider  = (props)=>{
     const currency = import.meta.env.VITE_CURRENCY;
     const [allcourses,setAllcourses] = useState([]);
     const [isEducator,setIsEducator] = useState(true);
+    const [enrolledCourses,setEnrolledCourses] = useState([]);
     const navigate = useNavigate();
     
       const fetchallcourses = async()=>{
         setAllcourses(dummyCourses);
+      }
+
+      const fetchUserEnrolledCourses = async ()=>{
+         setEnrolledCourses(dummyCourses);
       }
 
       const calculateRating = (course)=>{
@@ -30,7 +37,38 @@ export const AppcontextProvider  = (props)=>{
 
       useEffect(()=>{
         fetchallcourses()
+        fetchUserEnrolledCourses();
       },[])
+
+      //to calculate chapter time
+      const calculateChapterTime = (chapter)=>{
+        let time= 0;
+        chapter.chapterContent.map((lecture)=>time += lecture.lectureDuration )
+        return humanizeDuration(time * 60 *1000,{units : ["h","m"]})
+      }
+
+      //to calculate course duration of the course
+      const calculateCourseDuration = (course)=>{
+        let time = 0;
+        course.courseContent.map((chapter)=>{
+          chapter.chapterContent.map(
+            (lecture) => time+= lecture.lectureDuration
+          )
+        })
+        return humanizeDuration(time * 60 *1000, { units: ["h", "m"] });
+      }
+
+      //function calculate to no. of lectures in the course
+      const calculateNoofLectures = (course)=>{
+        let totalLectures = 0;
+        course.courseContent.forEach( chapter =>{
+          if(Array.isArray(chapter.chapterContent)){
+            totalLectures +=  chapter.chapterContent.length
+          }
+        });
+        return totalLectures;
+
+      }
 
     const value ={
         currency,
@@ -38,7 +76,12 @@ export const AppcontextProvider  = (props)=>{
         navigate,
         calculateRating,
         isEducator,
-        setIsEducator
+        setIsEducator,
+        calculateCourseDuration,
+        calculateNoofLectures,
+        calculateChapterTime,
+        enrolledCourses,
+        fetchUserEnrolledCourses
     }
 
     return (

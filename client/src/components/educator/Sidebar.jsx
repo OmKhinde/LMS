@@ -44,70 +44,92 @@ const Sidebar = () => {
     {
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
         </svg>
       ),
-      title: "Analytics",
-      path: "/educator/analytics",
+      title: "Switch to Student View",
+      path: "/",
     },
-    {
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-      title: "Settings",
-      path: "/educator/settings",
-    },
+    // {
+    //   icon: (
+    //     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    //     </svg>
+    //   ),
+    //   title: "Analytics",
+    //   path: "/educator/analytics",
+    // },
+    // {
+    //   icon: (
+    //     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    //     </svg>
+    //   ),
+    //   title: "Settings",
+    //   path: "/educator/settings",
+    // },
   ];
 
   return (
-    <div className="w-64 h-screen bg-white border-r border-gray-200 shadow-sm flex flex-col">
-      {/* Logo section */}
-      <div className="p-5 border-b border-gray-200">
-        <div className="flex items-center">
-          <img src={assets.logo} alt="LMS Logo" className="h-8" />
-          <span className="ml-2 text-lg font-medium text-gray-800">Edu Platform</span>
-        </div>
-      </div>
-
+    <div className="w-64 h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 border-r border-gray-700/50 shadow-2xl flex flex-col relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-purple-600/5"></div>
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent"></div>
+      
       {/* Navigation menu */}
-      <div className="flex flex-col flex-1 overflow-y-auto py-4">
-        <div className="px-4 mb-6">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Menu</span>
+      <div className="flex flex-col flex-1 overflow-y-auto py-6 relative z-10">
+        <div className="px-6 mb-8">
+          <span className="text-xs font-bold text-blue-300/70 uppercase tracking-wider">Navigation</span>
+          <div className="mt-2 h-0.5 w-12 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-2">
+        <nav className="flex-1 space-y-2 px-4">
           {menuItems.map((item, index) => (
             <NavLink
               key={index}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center px-3 py-3 text-sm font-medium rounded-lg transition ${
+                `flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-300 group relative overflow-hidden ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10 hover:backdrop-blur-sm'
                 }`
               }
             >
-              <span className="mr-3">{item.icon}</span>
-              <span>{item.title}</span>
+              {({ isActive }) => (
+                <>
+                  {/* Active indicator */}
+                  <div className={`absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-400 to-purple-400 rounded-r-full transition-all duration-300 ${
+                    isActive ? 'opacity-100' : 'opacity-0'
+                  }`}></div>
+                  
+                  {/* Icon container */}
+                  <span className={`mr-4 p-2 rounded-lg transition-all duration-300 ${
+                    isActive 
+                      ? 'bg-white/20 text-white' 
+                      : 'text-gray-400 group-hover:text-blue-300 group-hover:bg-white/10'
+                  }`}>
+                    {item.icon}
+                  </span>
+                  
+                  {/* Text */}
+                  <span className="relative z-10 font-medium tracking-wide">{item.title}</span>
+                  
+                  {/* Hover effect overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        {/* User profile section */}
-        <div className="mt-auto p-4 border-t border-gray-200">
-          <div className="flex items-center">
-            <img
-              src={assets.profile_img_2}
-              alt="User profile"
-              className="h-9 w-9 rounded-full object-cover"
-            />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-800">John Smith</p>
-              <p className="text-xs text-gray-500">Educator</p>
+        {/* Bottom section */}
+        <div className="px-4 py-6 border-t border-gray-700/50 mt-6">
+          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-4 border border-blue-500/20">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium text-gray-300">System Status: Online</span>
             </div>
           </div>
         </div>

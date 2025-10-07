@@ -50,7 +50,7 @@ const CourseList = () => {
     <>
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section with Title and Breadcrumb */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-16 px-4">
+        <div className="bg-gradient-to-r from-blue-300 to-indigo-400 py-16 px-4">
           <div className="container mx-auto max-w-7xl">
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Course List</h1>
@@ -94,18 +94,6 @@ const CourseList = () => {
         
         {/* Filter and Course Grid */}
         <div className="container mx-auto max-w-7xl px-4 py-12">
-          {/* Course Categories Filter */}
-          <div className="flex flex-wrap gap-4 mb-10 justify-center">
-            {['All', 'Development', 'Business', 'Design', 'Marketing', 'Health', 'Music'].map((category) => (
-              <button 
-                key={category} 
-                className="px-5 py-2.5 rounded-full text-sm font-medium transition-colors hover:bg-blue-600 hover:text-white bg-white text-gray-700 shadow-sm border border-gray-100"
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-          
           {/* Course Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredcourses.map((course,index)=> <CourseCard key={index} course={course}/>)}

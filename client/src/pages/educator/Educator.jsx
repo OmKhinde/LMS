@@ -24,9 +24,11 @@ const Educator = () => {
           <div className="py-2">
             <Outlet />
           </div>
-          <Footer />
         </main>
       </div>
+      
+      {/* Footer spans full width, overlapping sidebar */}
+      <Footer />
     </div>
   );
 };

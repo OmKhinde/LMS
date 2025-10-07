@@ -1,12 +1,14 @@
 
 import React, { useContext } from "react";
-import { assets } from '../../assets/assets'
+import { assets, dummyEducatorData } from '../../assets/assets'
 import { Link } from "react-router-dom";
 import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
 import { AppContext } from "../../context/AppContext";
+import { dummyCourses } from "../../assets/assets";
 
 const Navbar = () => {
 
+  const educatorData = dummyEducatorData
   const isCourseListPage = location.pathname.includes('course-list');
   const { openSignIn } = useClerk()
   const { user } = useUser()
@@ -18,7 +20,7 @@ const Navbar = () => {
       <div className="hidden md:flex items-center gap-5 text-gray:500">
         <div className="flex items-center gap-5">
           {user && 
-            <><button>{isEducator ? 'Educator Dashboard' : 'Become Educator' }</button>
+            <> <button className=" cursor-pointer" onClick={()=>navigate('/educator')}>{isEducator ? 'Educator Dashboard' : 'Become Educator' }</button>
           | <Link to="/myenrollments"> My-Enrollments </Link> 
             </>
           }
