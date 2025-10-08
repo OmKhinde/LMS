@@ -19,3 +19,8 @@ setPlayerdata({videoId : lecture.lectureUrl.split('/').pop()})   //for getting v
 react-youtube         -> for showing the youtube video
 uniqid                 ->for adding the uniqid for every course
 Quill                  -> for rich text editor
+
+in the backend part  npm install express nodemon dotenv cors cloudinary mongoose multer stripe svix@1.42.0 @clerk/express 
+ multer for images ,
+ svix for webhooks
+ stripe for payment gateway
