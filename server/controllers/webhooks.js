@@ -13,42 +13,52 @@ export const clerkWebhooks = async(req,res)=>{
         })
 
         const {data, type} = req.body;
+        
+        // Debug logging
+        console.log("Webhook Type:", type);
+        console.log("Webhook Data:", JSON.stringify(data, null, 2));
 
         switch(type) {
             case "user.created" : {
                 const userData = {
-                    _id : data._id,
-                    email : data.email_addresses[0].email_address,
-                    name : data.first_name + " " + data.last_name,
-                    imageUrl : data.image_url,
+                    _id : data.id || data._id,  // Clerk uses 'id', not '_id'
+                    email : data.email_addresses?.[0]?.email_address || '',
+                    name : (data.first_name || '') + " " + (data.last_name || ''),
+                    imageUrl : data.image_url || '',
                 }
 
+                console.log("Creating user with data:", userData);
                 await User.create(userData)
-                res.json({})
+                res.json({success: true})
                 break;
             }
 
             case "user.updated" : {
                const userData = {
-                    email : data.email_addresses[0].email_address,
-                    name : data.first_name + " " + data.last_name,
-                    imageUrl : data.image_url,
+                    email : data.email_addresses?.[0]?.email_address || '',
+                    name : (data.first_name || '') + " " + (data.last_name || ''),
+                    imageUrl : data.image_url || '',
                 }
-                await User.findByIdAndUpdate(data._id,userData)
-                res.json({})
+                console.log("Updating user with data:", userData);
+                await User.findByIdAndUpdate(data.id || data._id, userData)
+                res.json({success: true})
                 break ;
             }
 
             case "user.deleted" : {
-                await User.findByIdAndDelete(data._id)
-                res.json({})
+                console.log("Deleting user with ID:", data.id || data._id);
+                await User.findByIdAndDelete(data.id || data._id)
+                res.json({success: true})
                 break;
             }
 
               default : 
+                    console.log("Unknown webhook type:", type);
+                    res.json({success: false, message: "Unknown webhook type"})
                     break
         }
     } catch (error) {
-        res.json({success : "false" , message : error.message})
+        console.error("Webhook error:", error);
+        res.json({success : false , message : error.message})
     }
 }

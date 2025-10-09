@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { dummyCourses } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import humanizeDuration from "humanize-duration";
+import { useAuth, useUser} from '@clerk/clerk-react'
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -14,6 +15,8 @@ export const AppcontextProvider  = (props)=>{
     const [isEducator,setIsEducator] = useState(true);
     const [enrolledCourses,setEnrolledCourses] = useState([]);
     const navigate = useNavigate();
+    const {getToken} = useAuth();
+    const {user} = useUser();
     
       const fetchallcourses = async()=>{
         setAllcourses(dummyCourses);
@@ -39,6 +42,15 @@ export const AppcontextProvider  = (props)=>{
         fetchallcourses()
         fetchUserEnrolledCourses();
       },[])
+
+        const logtoken = async()=>{
+          console.log(await getToken() )
+        }
+        useEffect(()=>{
+          if(user){
+            logtoken()
+          }
+        },[user])
 
       //to calculate chapter time
       const calculateChapterTime = (chapter)=>{
