@@ -1,26 +1,34 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useContext } from "react";
 import { assets } from "../../assets/assets";
 import uniqid from 'uniqid';
 import { useState } from "react";
 import Quill from 'quill';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { AppContext } from '../../context/AppContext';
+import { validateCourseForm, validateLectureForm, sanitizeHtml } from '../../utils/validation';
 
 const Addcourse = () => {
   const quillRef = useRef(null);
   const editorRef = useRef(null);
+  const { backendurl, getToken } = useContext(AppContext);
 
-  const [courseTitle, setcourseTitle] = useState('');
-  const [coursePrice, setcoursePrice] = useState(0);
-  const [discount, setdiscount] = useState(0);
-  const [image, setimage] = useState(null);
-  const [chapters, setchapters] = useState([]);
-  const [showpopup, setShowpopup] = useState(false);
-  const [currentChapterId, setcurrentChapterId] = useState(null);
-  const [lectureDetails, setlectureDetails] = useState({
+  const [courseTitle, setCourseTitle] = useState('');
+  const [coursePrice, setCoursePrice] = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [image, setImage] = useState(null);
+  const [chapters, setChapters] = useState([]);
+  const [showpopup, setShowPopup] = useState(false);
+  const [currentChapterId, setCurrentChapterId] = useState(null);
+  const [lectureDetails, setLectureDetails] = useState({
     lectureTitle: '',
     lectureDuration: '',
     lectureUrl: '',
     isPreviewFree: false
-  })
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [lectureErrors, setLectureErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChapter  = (action,chapterIndex,chapterId)=>{
       if(action==='add'){
@@ -33,17 +41,17 @@ const Addcourse = () => {
             collapsed : false,
             chapterOrder : chapters.length > 0 ? chapters.slice(-1)[0].chapterOrder +1 : 1,
           };
-          setchapters([...chapters,newChapter]);
+          setChapters([...chapters,newChapter]);
         }
       }
 
       else if(action==='remove'){
-          setchapters(chapters.filter((chapter)=>{
+          setChapters(chapters.filter((chapter)=>{
             return chapter.chapterId !== chapterId
           }))
       }
       else if(action==='toggle'){
-          setchapters(
+          setChapters(
             chapters.map((chapter)=>{
               return  (
                 chapter.chapterId === chapterId ? {...chapter,collapsed : !chapter.collapsed} : chapter
@@ -55,11 +63,11 @@ const Addcourse = () => {
 
   const handleLecture =  (action ,chapterId,lectureIndex) =>{
       if(action=='add'){
-        setcurrentChapterId(chapterId);
-        setShowpopup(true);
+        setCurrentChapterId(chapterId);
+        setShowPopup(true);
       }
       else if(action==='remove'){
-        setchapters(
+        setChapters(
           chapters.map((chapter)=>{
             if(chapter.chapterId===chapterId){
                 chapter.chapterContent.splice(lectureIndex,1);
@@ -71,44 +79,123 @@ const Addcourse = () => {
   }
 
   const addLectures = ()=>{
-    setchapters(
+    // Validate lecture form before adding
+    const validation = validateLectureForm(lectureDetails);
+    if (!validation.isValid) {
+      setLectureErrors(validation.errors);
+      return;
+    }
+
+    // Clear any previous errors
+    setLectureErrors({});
+
+    // Generate a unique lectureId across all chapters
+    let maxLectureId = 0;
+    chapters.forEach(chapter => {
+      chapter.chapterContent.forEach(lecture => {
+        if (lecture.lectureId > maxLectureId) {
+          maxLectureId = lecture.lectureId;
+        }
+      });
+    });
+
+    setChapters(
       chapters.map((chapter)=>{
         if(chapter.chapterId===currentChapterId){
           const newLecture = {
-            ...lectureDetails,
-            lectureOrder : chapter.chapterContent.length  >0  ? chapter.chapterContent.slice(-1)[0].lectureOrder +1 :1,
-            lectureId : uniqid()
+            lectureTitle: lectureDetails.lectureTitle.trim(),
+            lectureDuration: Number(lectureDetails.lectureDuration),
+            lectureUrl: lectureDetails.lectureUrl.trim(),
+            isPreviewFree: lectureDetails.isPreviewFree,
+            lectureOrder: chapter.chapterContent.length + 1,
+            lectureId: maxLectureId + 1
           };
           chapter.chapterContent.push(newLecture);
         }
         return chapter;
       })
     );
-    setShowpopup(false),
-    setlectureDetails({
+    setShowPopup(false);
+    setLectureDetails({
       lectureTitle : '',
       lectureDuration: '',
       lectureUrl:'',
       isPreviewFree : false
     });
+    toast.success('Lecture added successfully!');
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically handle form submission
-    // For now, we'll just log the course data
-    console.log('Course Data:', {
-      courseTitle,
-      coursePrice,
-      discount,
-      image,
-      chapters,
-      description: quillRef.current?.getContents()
-    });
-    
-    // You can add your submit logic here
-    alert('Course creation functionality needs to be implemented!');
-  }
+    setIsSubmitting(true);
+    setFormErrors({});
+
+    try {
+      // Prepare form data for validation
+      const formDataForValidation = {
+        courseTitle,
+        courseDescription: quillRef.current.root.innerHTML,
+        coursePrice: Number(coursePrice),
+        discount: Number(discount),
+        image,
+        chapters
+      };
+
+      // Validate the entire form
+      const validation = validateCourseForm(formDataForValidation);
+      if (!validation.isValid) {
+        setFormErrors(validation.errors);
+        toast.error('Please fix the validation errors before submitting.');
+        return;
+      }
+
+      const courseData = {
+        courseTitle: courseTitle.trim(),
+        courseDescription: sanitizeHtml(quillRef.current.root.innerHTML),
+        coursePrice: Number(coursePrice),
+        discount: Number(discount),
+        courseContent: chapters,
+        isPublished: true,
+        courseRatings: [],
+        enrolledStudents: []
+      };
+
+      const formData = new FormData();
+      formData.append('courseData', JSON.stringify(courseData));
+      formData.append('image', image);
+
+      const token = await getToken();
+      const { data } = await axios.post(backendurl + '/api/educator/add-course', formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (data.success) {
+        toast.success(data.message || 'Course created successfully!');
+        // Reset form
+        setCourseTitle('');
+        setCoursePrice(0);
+        setDiscount(0);
+        setImage(null);
+        setChapters([]);
+        setFormErrors({});
+        quillRef.current.root.innerHTML = "";
+      } else {
+        toast.error(data.message || 'Failed to create course');
+      }
+      
+    } catch (error) {
+      console.error('Error creating course:', error);
+      if (error.response) {
+        toast.error(error.response.data?.message || `Server Error: ${error.response.status}`);
+      } else if (error.request) {
+        toast.error('Network error. Please check your connection.');
+      } else {
+        toast.error(error.message || 'Failed to create course');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     //initiate quill ones   makes the editor ones
@@ -156,7 +243,7 @@ const Addcourse = () => {
               </label>
               <input 
                 type="text" 
-                onChange={e => setcourseTitle(e.target.value)} 
+                onChange={e => setCourseTitle(e.target.value)} 
                 value={courseTitle} 
                 placeholder="Enter an engaging course title..." 
                 className="w-full outline-none py-3 px-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
@@ -193,7 +280,7 @@ const Addcourse = () => {
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">$</span>
                   <input 
                     type="number" 
-                    onChange={e => setcoursePrice(e.target.value)} 
+                    onChange={e => setCoursePrice(e.target.value)} 
                     value={coursePrice} 
                     placeholder="99" 
                     className="w-full outline-none py-3 pl-8 pr-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
@@ -212,7 +299,7 @@ const Addcourse = () => {
                 <div className="relative">
                   <input 
                     type="number" 
-                    onChange={e => setdiscount(e.target.value)} 
+                    onChange={e => setDiscount(e.target.value)} 
                     value={discount} 
                     placeholder="10" 
                     className="w-full outline-none py-3 px-4 pr-8 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white" 
@@ -265,7 +352,7 @@ const Addcourse = () => {
                   <input 
                     type="file" 
                     id="thumbnailImage" 
-                    onChange={e => setimage(e.target.files[0])} 
+                    onChange={e => setImage(e.target.files[0])} 
                     accept="image/*" 
                     hidden 
                   />
@@ -417,7 +504,7 @@ const Addcourse = () => {
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h2 className="text-xl font-bold text-gray-800">Add New Lecture</h2>
               <button 
-                onClick={() => setShowpopup(false)}
+                onClick={() => setShowPopup(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
               >
                 <img src={assets.cross_icon} alt="Close" className="w-4 h-4" />
@@ -436,7 +523,7 @@ const Addcourse = () => {
                   placeholder="Enter lecture title..."
                   value={lectureDetails.lectureTitle}
                   onChange={(e) => {
-                    setlectureDetails({
+                    setLectureDetails({
                       ...lectureDetails,
                       lectureTitle: e.target.value
                     })
@@ -455,7 +542,7 @@ const Addcourse = () => {
                   min="1"
                   value={lectureDetails.lectureDuration}
                   onChange={(e) => {
-                    setlectureDetails({
+                    setLectureDetails({
                       ...lectureDetails,
                       lectureDuration: e.target.value
                     })
@@ -473,7 +560,7 @@ const Addcourse = () => {
                   placeholder="https://youtube.com/watch?v=..."
                   value={lectureDetails.lectureUrl}
                   onChange={(e) => {
-                    setlectureDetails({
+                    setLectureDetails({
                       ...lectureDetails,
                       lectureUrl: e.target.value
                     })
@@ -488,7 +575,7 @@ const Addcourse = () => {
                   className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                   checked={lectureDetails.isPreviewFree}
                   onChange={(e) => {
-                    setlectureDetails({
+                    setLectureDetails({
                       ...lectureDetails,
                       isPreviewFree: e.target.checked
                     })
@@ -504,7 +591,7 @@ const Addcourse = () => {
             <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
               <button 
                 type="button" 
-                onClick={() => setShowpopup(false)}
+                onClick={() => setShowPopup(false)}
                 className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200"
               >
                 Cancel

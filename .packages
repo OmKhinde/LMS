@@ -24,3 +24,6 @@ in the backend part  npm install express nodemon dotenv cors cloudinary mongoose
  multer for images ,
  svix for webhooks
  stripe for payment gateway
+ react-toastify   ->  it is like the pop up of notification
+
+ 

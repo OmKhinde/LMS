@@ -6,7 +6,9 @@ import { assets } from "../../assets/assets";
 import Searchbar from "../../components/student/Searchbar";
 import CourseCard from "../../components/student/CourseCard";
 import humanizeDuration from "humanize-duration";
-import Youtube from 'react-youtube'
+import Youtube from 'react-youtube';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const CourseDetailes = () => {
   const { id } = useParams();
@@ -16,27 +18,99 @@ const CourseDetailes = () => {
   const [isalreadyEnrolled, setisalreadyEnrolled] = useState(false)
   const [loading, setLoading] = useState(true);
   const [playerdata,setPlayerdata] = useState(null);
-  const { allcourses, currency, calculateRating, calculateCourseDuration, calculateNoofLectures, calculateChapterTime } = useContext(AppContext);
+  const { allcourses, currency, calculateRating, calculateCourseDuration, calculateNoofLectures, calculateChapterTime, backendurl, userData, getToken } = useContext(AppContext);
 
   const fetchAllCourse = async () => {
-    if (allcourses && allcourses.length > 0) {
-      const findCourse = allcourses.find(course => course._id === id);
-      setCourseData(findCourse);
+    try {
+        setLoading(true);
+        const {data} = await axios.get(backendurl + '/api/course/' + id );
+        if(data.success){
+          setCourseData(data.course);  // Changed from data.courseData to data.course
+          setLoading(false);
+        }
+        else{
+          toast.error(data.message);
+          setLoading(false);
+        }
+    } catch (error) {
+       console.error('Error fetching course:', error);
+       toast.error(error.message);
+       setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
-    fetchAllCourse();
-  }, [allcourses, id])
+    if (id) {
+      fetchAllCourse();
+    }
+  }, [id])
 
-  const toggleSection = (index)=>{
-    setopenSections((prev)=>(
-      {
-        ...prev ,
-        [index] : !prev[index]    //flip the state
+  useEffect(()=>{
+    if(userData && courseData){
+      console.log('🔍 Checking enrollment status:');
+      console.log('- Course ID:', courseData._id);
+      console.log('- User enrolled courses:', userData.enrolledCourses);
+      console.log('- Includes check:', userData.enrolledCourses?.includes(courseData._id));
+      
+      // Convert both to strings for comparison to handle ObjectId/string mismatch
+      const isEnrolled = userData.enrolledCourses?.some(courseId => 
+        courseId.toString() === courseData._id.toString()
+      ) || false;
+      
+      console.log('- Final enrollment status:', isEnrolled);
+      setisalreadyEnrolled(isEnrolled);
+    }
+  },[userData,courseData])
+
+
+
+  const enrollCourse = async () => {
+    try {
+      if (!userData) {
+        return toast.warn('Login to Enroll');
       }
-    ));
+      
+      if (isalreadyEnrolled) {
+        return toast.warn('Already Enrolled');
+      }
+      
+      const token = await getToken();
+      
+      const { data } = await axios.post(backendurl + '/api/user/purchase', {
+        courseId: courseData._id
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (data.success) {
+        const { sessionUrl } = data;
+        console.log('🚀 Redirecting to Stripe:', sessionUrl);
+        window.location.replace(sessionUrl);
+      } else {
+        console.error('❌ Purchase failed:', data.message);
+        toast.error(data.message);
+      }
+      
+    } catch (error) {
+      console.error('Enrollment error:', error);
+      
+      if (error.response) {
+        toast.error(error.response.data?.message || `Error ${error.response.status}: Failed to enroll`);
+      } else if (error.request) {
+        toast.error('Network error. Please check your connection.');
+      } else {
+        toast.error(error.message || 'Failed to enroll in course');
+      }
+    }
+  }
+
+  const toggleSection = (index) => {
+    setopenSections((prev) => ({
+      ...prev,
+      [index]: !prev[index]    //flip the state
+    }));
   }
 
   if (loading) {
@@ -103,7 +177,7 @@ const CourseDetailes = () => {
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <span className="text-blue-800 font-medium">
-                      {courseData.enrolledStudents.length} {courseData.enrolledStudents.length !== 1 ? "Students" : "Student"}
+                      {courseData.enrolledStudents?.length || 0} {(courseData.enrolledStudents?.length || 0) !== 1 ? "Students" : "Student"}
                     </span>
                   </div>
                 </div>
@@ -126,7 +200,7 @@ const CourseDetailes = () => {
                 </h2>
                 
                 <div className="space-y-3">
-                  {courseData.courseContent.map((chapter,index)=>(
+                  {courseData.courseContent?.map((chapter,index)=>(
                     <div className="border border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-xl overflow-hidden hover:shadow-md transition-all duration-300" key={index}>
                       <div className="flex items-center justify-between px-6 py-4 cursor-pointer select-none hover:bg-blue-50 transition-colors duration-200" onClick={() => toggleSection(index)}>
                         <div className="flex items-center gap-3">
@@ -136,7 +210,7 @@ const CourseDetailes = () => {
                           <h3 className="font-semibold text-gray-800 text-base">{chapter.chapterTitle}</h3>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-blue-600">{chapter.chapterContent.length} lectures</p>
+                          <p className="text-sm font-medium text-blue-600">{chapter.chapterContent?.length || 0} lectures</p>
                           <p className="text-xs text-gray-500">{calculateChapterTime(chapter)}</p>
                         </div>
                       </div>
@@ -144,7 +218,7 @@ const CourseDetailes = () => {
                       <div className={`overflow-hidden transition-all duration-500 ease-in-out ${openSections[index] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                         <div className="bg-white border-t border-gray-100">
                           <ul className="divide-y divide-gray-50">
-                            {chapter.chapterContent.map((lecture,idx) =>(
+                            {chapter.chapterContent?.map((lecture,idx) =>(
                              <li key={idx} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50 transition-colors duration-200">
                                 <div className="bg-green-100 rounded-full p-2">
                                   <img src={assets.play_icon} alt="play icon" className="w-4 h-4" />
@@ -264,7 +338,15 @@ const CourseDetailes = () => {
                   </div>
 
                   {/* Enroll Button */}
-                  <button className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] mb-4">
+                  <button 
+                    onClick={enrollCourse}
+                    disabled={isalreadyEnrolled}
+                    className={`w-full py-4 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] mb-4 ${
+                      isalreadyEnrolled 
+                        ? 'bg-gray-400 cursor-not-allowed text-white' 
+                        : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
+                    }`}
+                  >
                     {isalreadyEnrolled ? 'Already Enrolled ✓' : 'Enroll Now'}
                   </button>
                   

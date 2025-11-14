@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { assets } from "../../assets/assets";
+import { useUser } from '@clerk/clerk-react';
 
 const Sidebar = () => {
   // Menu items for the sidebar
@@ -21,7 +22,7 @@ const Sidebar = () => {
         </svg>
       ),
       title: "My Courses",
-      path: "/educator/mycourses",
+      path: "/educator/my-courses",
     },
     {
       icon: (
@@ -30,7 +31,7 @@ const Sidebar = () => {
         </svg>
       ),
       title: "Add Course",
-      path: "/educator/addcourse",
+      path: "/educator/add-course",
     },
     {
       icon: (
@@ -39,7 +40,7 @@ const Sidebar = () => {
         </svg>
       ),
       title: "Students",
-      path: "/educator/studentenrolled",
+      path: "/educator/students-enrolled",
     },
     {
       icon: (
@@ -70,6 +71,34 @@ const Sidebar = () => {
     //   path: "/educator/settings",
     // },
   ];
+
+  const { user, isLoaded } = useUser();
+
+  // If the signed-in user is an admin, add the Applications link to the menu
+  if (isLoaded && user?.publicMetadata?.role === 'admin') {
+    // Insert Applications after "My Courses" (index 2 -> insert at 3)
+  menuItems.splice(3, 0, {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+      title: "Applications",
+      path: "/admin/applications",
+    });
+  }
+
+   if (isLoaded && user && user?.publicMetadata?.role !== 'educator' && user?.publicMetadata?.role !== 'admin') {
+    menuItems.splice(1, 0, {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7v8m0 0l-4-4m4 4l4-4M8 7H6a2 2 0 00-2 2v6a2 2 0 002 2h2" />
+        </svg>
+      ),
+      title: "Apply",
+      path: "/educator/apply",
+    });
+  }
 
   return (
     <div className="w-64 h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 border-r border-gray-700/50 shadow-2xl flex flex-col relative overflow-hidden">

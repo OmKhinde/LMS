@@ -5,23 +5,57 @@ import { AppContext } from '../../context/AppContext'; // Adjust path as needed
 import { assets } from '../../assets/assets'; // Adjust path as needed
 import YouTube from 'react-youtube';
 import Rating from '../../components/student/Rating';
+import axios from 'axios';
+import { toast } from 'react-toastify';
  
 const Player = () => {
-  const {enrolledCourses, calculateChapterTime} = useContext(AppContext);
+  const {enrolledCourses, calculateChapterTime, backendurl, getToken, userData, fetchUserEnrolledCourses, triggerProgressRefresh} = useContext(AppContext);
   const {courseId} = useParams();
-  const [courseData,setCourseData] = useState(null);
-  const [openSections,setopenSections] = useState({});
-  const [playerdata,setPlayerdata] = useState(null);
+  const [courseData, setCourseData] = useState(null);
+  const [openSections, setOpenSections] = useState({});
+  const [playerData, setPlayerData] = useState(null);
+  const [progressData, setProgressData] = useState(null);
+  const [initialRating, setInitialRating] = useState(0);
+  const [isMarkingComplete, setIsMarkingComplete] = useState(false);
 
   const getCourseData = () => {
     if (!enrolledCourses || enrolledCourses.length === 0) return;
     
-    const course = enrolledCourses.find(course => course._id === courseId);
-    setCourseData(course || null);
-  }
+    enrolledCourses.map((course) => {
+      if (course._id === courseId) {
+        setCourseData(course);
+        course.courseRatings.map((item) => {
+          if (item.userId === userData._id) {
+            setInitialRating(item.rating);
+          }
+        });
+      }
+    });
+  };
+
+  // Calculate course progress percentage
+  const calculateProgressPercentage = () => {
+    if (!courseData) {
+      return 0;
+    }
+    
+    // Create a fallback if progressData is null/undefined
+    const safeProgressData = progressData || { lectureCompleted: [] };
+    
+    if (!safeProgressData.lectureCompleted) {
+      safeProgressData.lectureCompleted = [];
+    }
+    
+    const totalLectures = courseData.courseContent.reduce((total, chapter) => total + chapter.chapterContent.length, 0);
+    const completedLectures = Array.isArray(safeProgressData.lectureCompleted) ? safeProgressData.lectureCompleted.length : 0;
+    
+    const percentage = totalLectures > 0 ? Math.round((completedLectures / totalLectures) * 100) : 0;
+    
+    return percentage;
+  };
 
    const toggleSection = (index)=>{
-    setopenSections((prev)=>(
+    setOpenSections((prev)=>(
       {
         ...prev ,
         [index] : !prev[index]    //flip the state
@@ -30,8 +64,102 @@ const Player = () => {
   }
 
   useEffect(()=>{
-    getCourseData()
-  },[enrolledCourses, courseId])
+    if(enrolledCourses.length > 0) {
+        getCourseData()
+        getCourseProgress()  // Fetch progress data when component mounts
+    }
+  },[enrolledCourses])
+
+  const markLectureAsCompleted = async (lectureId) => {
+    try {
+      setIsMarkingComplete(true);
+      const token = await getToken();
+      
+      const response = await axios.post(backendurl + '/api/user/update-course-progress', { courseId, lectureId }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const { data } = response;
+
+      if (data.success) {
+        toast.success(data.message);
+        
+        // Immediately update local state with backend returned progress data
+        if (data.progressData) {
+          setProgressData(data.progressData);
+        }
+        
+        // Trigger progress refresh for other components (like MyEnrollments)
+        if (triggerProgressRefresh) {
+          triggerProgressRefresh();
+        }
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error('Error marking lecture as completed:', error);
+      toast.error(error.message);
+    } finally {
+      setIsMarkingComplete(false);
+    }
+  };
+
+  const getCourseProgress = async () => {
+    try {
+      if (!courseId) {
+        return;
+      }
+      
+      const token = await getToken();
+      const requestPayload = { courseId };
+      
+      const response = await axios.post(backendurl + '/api/user/get-course-progress', requestPayload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const { data } = response;
+
+      if (data.success) {
+        // Ensure we have a proper progress data structure
+        const progressData = data.progressData || { lectureCompleted: [] };
+        
+        // Make sure lectureCompleted is always an array
+        if (!Array.isArray(progressData.lectureCompleted)) {
+          progressData.lectureCompleted = [];
+        }
+        
+        setProgressData(progressData);
+        
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error('Error getting progress:', error);
+      toast.error(error.message);
+    }
+  };
+
+  const handleRate = async (rating) => {
+    try {
+      const token = await getToken();
+      const { data } = await axios.post(backendurl + '/api/user/add-rating', { courseId, rating }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (data.success) {
+        toast.success(data.message);
+        fetchUserEnrolledCourses();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  useEffect(()=>{
+    getCourseProgress();
+  },[])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-purple-50/20">
@@ -70,13 +198,13 @@ const Player = () => {
                         <ul className="divide-y divide-gray-50">
                           {chapter.chapterContent.map((lecture,idx) =>(
                            <li key={idx} className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors duration-200 cursor-pointer" onClick={()=>{
-                             setPlayerdata({...lecture, chapterIndex: index, lectureIndex: idx})
+                             setPlayerData({...lecture, chapterIndex: index, lectureIndex: idx})
                            }}>
-                              <div className={`rounded-full p-1.5 ${playerdata && playerdata.lectureTitle === lecture.lectureTitle ? 'bg-green-500' : 'bg-gray-200'}`}>
-                                <img src={playerdata && playerdata.lectureTitle === lecture.lectureTitle ? assets.blue_tick_icon : assets.play_icon} alt="play icon" className="w-3 h-3" />
+                              <div className={`rounded-full p-1.5 ${playerData && playerData.lectureTitle === lecture.lectureTitle ? 'bg-green-500' : 'bg-gray-200'}`}>
+                                <img src={progressData && Array.isArray(progressData.lectureCompleted) && progressData.lectureCompleted.includes(lecture.lectureId) ? assets.blue_tick_icon : assets.play_icon} alt="play icon" className="w-3 h-3" />
                               </div>
                               <div className="flex items-center justify-between w-full">
-                                <p className={`font-medium text-xs flex-1 ${playerdata && playerdata.lectureTitle === lecture.lectureTitle ? 'text-blue-600' : 'text-gray-700'}`}>
+                                <p className={`font-medium text-xs flex-1 ${playerData && playerData.lectureTitle === lecture.lectureTitle ? 'text-blue-600' : 'text-gray-700'}`}>
                                   {lecture.lectureTitle}
                                 </p>
                                 <span className="text-xs text-gray-500 font-medium ml-2">
@@ -103,7 +231,7 @@ const Player = () => {
                   <h3 className="text-lg font-bold text-gray-900">Rate this Course</h3>
                 </div>
                 <div className="mt-3">
-                  <Rating initialRating={0}/>
+                  <Rating initialRating={initialRating} onRate={handleRate}/>
                 </div>
               </div>
             </div>
@@ -112,12 +240,12 @@ const Player = () => {
           {/* Right Column - Video Player */}
           <div className="lg:col-span-2 order-1 lg:order-2">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-              {playerdata ? (
+              {playerData ? (
                 <div>
                   {/* Video Player */}
                   <div className="relative">
                     <YouTube 
-                      videoId={playerdata.lectureUrl.split('/').pop()} 
+                      videoId={playerData.lectureUrl.split('/').pop()} 
                       iframeClassName="w-full aspect-video"
                       opts={{
                         playerVars: {
@@ -135,21 +263,21 @@ const Player = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                            Chapter {playerdata.chapterIndex + 1}
+                            Chapter {playerData.chapterIndex + 1}
                           </span>
                           <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
-                            Lecture {playerdata.lectureIndex + 1}
+                            Lecture {playerData.lectureIndex + 1}
                           </span>
                         </div>
                         <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
-                          {playerdata.lectureTitle}
+                          {playerData.lectureTitle}
                         </h1>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                             </svg>
-                            {humanizeDuration(playerdata.lectureDuration * 60 * 1000, {units: ['h', 'm']})}
+                            {humanizeDuration(playerData.lectureDuration * 60 * 1000, {units: ['h', 'm']})}
                           </span>
                           <span className="flex items-center gap-1">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -160,23 +288,60 @@ const Player = () => {
                           </span>
                         </div>
                       </div>
+                      {/* <div className="flex justify-between items-center mt-1">
+                        <p>{playerData.chapter}.{playerData.lecture} {playerData.lectureTitle}</p>
+                      </div> */}
                       
-                      <button className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-semibold rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-                        <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        {false ? 'Completed' : 'Mark Complete'}
+                      <button 
+                        onClick={() => markLectureAsCompleted(playerData.lectureId)} 
+                        disabled={isMarkingComplete}
+                        className={`inline-flex items-center px-4 py-2 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
+                          progressData && Array.isArray(progressData.lectureCompleted) && progressData.lectureCompleted.includes(playerData.lectureId)
+                            ? 'bg-gray-500 cursor-not-allowed' 
+                            : isMarkingComplete 
+                              ? 'bg-yellow-500 cursor-wait' 
+                              : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+                        }`}
+                      >
+                        {isMarkingComplete ? (
+                          <>
+                            <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Marking...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            {progressData && Array.isArray(progressData.lectureCompleted) && progressData.lectureCompleted.includes(playerData.lectureId) ? 'Completed' : 'Mark Complete'}
+                          </>
+                        )}
                       </button>
                     </div>
                     
                     {/* Progress Bar */}
                     <div className="mt-6">
                       <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                        <span>Lecture Progress</span>
-                        <span>0% Complete</span>
+                        <span>Course Progress</span>
+                        <span>{calculateProgressPercentage()}% Complete</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full" style={{width: '0%'}}></div>
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500" 
+                          style={{width: `${calculateProgressPercentage()}%`}}
+                        ></div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                        <span>
+                          {progressData && Array.isArray(progressData.lectureCompleted) ? progressData.lectureCompleted.length : 0} lectures completed
+                        </span>
+                        <span>
+                          {courseData ? 
+                            courseData.courseContent.reduce((total, chapter) => total + chapter.chapterContent.length, 0) 
+                            : 0} total lectures
+                        </span>
                       </div>
                     </div>
                   </div>

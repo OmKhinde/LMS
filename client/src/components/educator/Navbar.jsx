@@ -1,10 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { assets } from "../../assets/assets";
+import { AppContext } from "../../context/AppContext";
+import { useUser } from '@clerk/clerk-react';
 
 const Navbar = ({ toggleSidebar }) => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  // get current user info from context / Clerk
+  const { userData } = useContext(AppContext);
+  const { user, isLoaded } = useUser();
+
+  const displayName = userData?.name || user?.fullName || user?.firstName || 'John Smith';
+  const displayEmail = userData?.email || (user && user.emailAddresses && user.emailAddresses[0]?.emailAddress) || '';
+  const displayImage = userData?.imageUrl || user?.imageUrl || user?.profileImageUrl || assets.profile_img_2;
 
   const toggleNotifications = () => {
     setNotificationsOpen(!notificationsOpen);
@@ -163,15 +173,15 @@ const Navbar = ({ toggleSidebar }) => {
             >
               <div className="relative">
                 <img
-                  src={assets.profile_img_2}
+                  src={displayImage}
                   alt="User profile"
                   className="h-9 w-9 rounded-xl object-cover ring-2 ring-gray-200 group-hover:ring-blue-300 transition-all duration-200 shadow-sm"
                 />
                 <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-400 rounded-full border-2 border-white"></div>
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">John Smith</p>
-                <p className="text-xs text-gray-500 font-medium">Educator</p>
+                <p className="text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">{displayName}</p>
+                <p className="text-xs text-gray-500 font-medium">{(user && user.publicMetadata && user.publicMetadata.role) || (userData && userData.role) || 'Educator'}</p>
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-all duration-200 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -183,15 +193,15 @@ const Navbar = ({ toggleSidebar }) => {
               <div className="absolute right-0 mt-3 w-52 bg-white rounded-2xl shadow-2xl overflow-hidden z-10 border border-gray-100 transform transition-all duration-200 animate-in slide-in-from-top-2">
                 <div className="py-3 px-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
                   <div className="flex items-center space-x-3">
-                    <img
-                      src={assets.profile_img_2}
-                      alt="User profile"
-                      className="h-10 w-10 rounded-xl object-cover ring-2 ring-blue-200"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">John Smith</p>
-                      <p className="text-xs text-gray-600">john.smith@email.com</p>
-                    </div>
+                        <img
+                          src={displayImage}
+                          alt="User profile"
+                          className="h-10 w-10 rounded-xl object-cover ring-2 ring-blue-200"
+                        />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{displayName}</p>
+                          <p className="text-xs text-gray-600">{displayEmail}</p>
+                        </div>
                   </div>
                 </div>
                 <div className="py-2">

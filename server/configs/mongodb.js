@@ -5,6 +5,10 @@ const connectDB = async () => {
         console.log('Database Connected')
     });
 
+    mongoose.connection.on('error', (err) => {
+        console.error('Database connection error:', err);
+    });
+
     await mongoose.connect(`${process.env.MONGO_URI}/lms`);
 }
 

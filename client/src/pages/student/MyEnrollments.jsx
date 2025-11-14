@@ -1,37 +1,234 @@
-import React, { useContext,useState } from "react";
+import React, { useContext,useState, useEffect } from "react";
 import { AppContext } from "../../context/AppContext";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import axios from "axios";
 
 const MyEnrollments = () => {
 
-  const { enrolledCourses, calculateCourseDuration,navigate } = useContext(AppContext);
-  const [progressArray, setProgressArray] = useState([
-    { lectureCompleted: 2, totalLectures: 7 },
-    { lectureCompleted: 4, totalLectures: 7 },
-    { lectureCompleted: 4, totalLectures: 7 },
-    { lectureCompleted: 3, totalLectures: 7 },
-    { lectureCompleted: 5, totalLectures: 6 },
-    { lectureCompleted: 5, totalLectures: 6 },
-    { lectureCompleted: 2, totalLectures: 5 },
-    { lectureCompleted: 2, totalLectures: 12},
-    { lectureCompleted: 27, totalLectures: 30 },
-    { lectureCompleted: 7, totalLectures: 8},
-    { lectureCompleted: 9, totalLectures: 10 },
-  ])
+  const { enrolledCourses, calculateCourseDuration,navigate,userData , fetchUserEnrolledCourses,backendurl , calculateNoofLectures ,getToken, fetchUserData, progressRefreshTrigger  } = useContext(AppContext);
+  const [progressArray, setProgressArray] = useState([])
+  const [searchParams] = useSearchParams();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    // Check if user is returning from Stripe payment
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
+      console.log('🎉 Payment success detected:', sessionId);
+      console.log('📋 Current enrolled courses before refresh:', enrolledCourses.length);
+      
+      toast.success('Payment successful! Welcome to your new course!');
+      
+      // Multiple refresh attempts to ensure enrollment is captured
+      const refreshEnrollments = async () => {
+        console.log('🔄 Starting enrollment refresh sequence...');
+        
+        // First refresh immediately
+        if (fetchUserEnrolledCourses) {
+          await fetchUserEnrolledCourses();
+          console.log('✅ First enrollment refresh complete');
+        }
+        
+        if (fetchUserData) {
+          await fetchUserData();
+        }
+        
+        // Second refresh after 2 seconds (backend processing time)
+        setTimeout(async () => {
+          console.log('🔄 Second enrollment refresh attempt...');
+          if (fetchUserEnrolledCourses) {
+            await fetchUserEnrolledCourses();
+            console.log('✅ Second enrollment refresh complete');
+          }
+        }, 2000);
+        
+        // Final refresh after 5 seconds
+        setTimeout(async () => {
+          console.log('🔄 Final enrollment refresh attempt...');
+          if (fetchUserEnrolledCourses) {
+            await fetchUserEnrolledCourses();
+            console.log('✅ Final enrollment refresh complete');
+            console.log('📋 Final enrolled courses count:', enrolledCourses.length);
+          }
+        }, 5000);
+      };
+      
+      refreshEnrollments();
+    }
+  }, [searchParams, fetchUserEnrolledCourses, fetchUserData]);
+
+  const forceRefreshEnrollments = async () => {
+    try {
+      console.log('🔄 Manual enrollment refresh triggered');
+      console.log('📋 Current enrolled courses count:', enrolledCourses.length);
+      
+      toast.info('Refreshing enrollments...', { autoClose: 1000 });
+      
+      if (fetchUserEnrolledCourses) {
+        await fetchUserEnrolledCourses();
+        console.log('✅ Enrollment refresh complete');
+        toast.success('Enrollments refreshed successfully!');
+      }
+      
+      if (fetchUserData) {
+        await fetchUserData();
+      }
+      
+    } catch (error) {
+      console.error('❌ Manual enrollment refresh failed:', error);
+      toast.error('Failed to refresh enrollments');
+    }
+  };
+
+  const getCourseProgress = async () => {
+    try {
+      setIsRefreshing(true);
+      console.log('🔄 Refreshing progress for', enrolledCourses.length, 'courses');
+      
+      const token = await getToken();
+      const tempProgressArray = await Promise.all(
+        enrolledCourses.map(async (course, index) => {
+          console.log('📊 Getting progress for course:', course.courseTitle);
+          
+          const { data } = await axios.post(`${backendurl}/api/user/get-course-progress`, { courseId: course._id }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          let totalLectures = calculateNoofLectures(course);
+          const lectureCompleted = data.progressData ? data.progressData.lectureCompleted.length : 0;
+          
+          console.log(`📈 Course ${index + 1}: ${lectureCompleted}/${totalLectures} completed`);
+          
+          return { totalLectures, lectureCompleted };
+        })
+      );
+      
+      console.log('✅ Progress update complete:', tempProgressArray);
+      setProgressArray(tempProgressArray);
+    } catch (error) {
+      console.error('❌ Progress update failed:', error);
+      toast.error(error.message);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (enrolledCourses.length > 0) {
+      getCourseProgress();
+    }
+  }, [enrolledCourses]);
+
+  // Listen for progress refresh trigger from other components
+  useEffect(() => {
+    console.log('🔔 Progress refresh trigger changed:', progressRefreshTrigger);
+    
+    if (progressRefreshTrigger > 0 && enrolledCourses.length > 0) {
+      console.log('🔄 Triggering progress refresh...');
+      getCourseProgress().then(() => {
+        toast.success('Progress updated successfully!', {
+          position: "bottom-right",
+          autoClose: 2000,
+        });
+      });
+    }
+  }, [progressRefreshTrigger, enrolledCourses]);
+
+  // Force refresh when component mounts (user navigates back from player)
+  useEffect(() => {
+    if (enrolledCourses.length > 0) {
+      console.log('🔄 Component mounted, refreshing progress...');
+      getCourseProgress();
+    }
+  }, []); // Empty dependency array to run only on mount
+
+  // Add effect to refresh progress when component comes into focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (enrolledCourses.length > 0) {
+        console.log('🔄 Window gained focus, refreshing progress...');
+        getCourseProgress();
+      }
+    };
+
+    // Add event listener for when user returns to this tab/window
+    window.addEventListener('focus', handleFocus);
+    
+    // Also refresh when component mounts (user navigates back)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && enrolledCourses.length > 0) {
+        console.log('🔄 Page became visible, refreshing progress...');
+        getCourseProgress();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [enrolledCourses]);
 
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-purple-50/20 py-8">
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
           {/* Header Section */}
-          <div className="mb-8">
-            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-              My Enrollments
-            </h1>
-            <p className="text-gray-600">Track your learning progress and continue your courses</p>
+          <div className="mb-8 flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                My Enrollments
+              </h1>
+              <p className="text-gray-600">Track your learning progress and continue your courses</p>
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={forceRefreshEnrollments}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+              >
+                <svg 
+                  className="w-4 h-4" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh Enrollments
+              </button>
+              <button 
+                onClick={getCourseProgress}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+              >
+                <svg 
+                  className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {isRefreshing ? 'Refreshing...' : 'Refresh Progress'}
+              </button>
+            </div>
           </div>
 
           {/* Enrollments Table Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden relative">
+            {isRefreshing && (
+              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-2xl">
+                <div className="flex items-center gap-3 bg-blue-100 px-6 py-3 rounded-lg">
+                  <svg className="w-5 h-5 animate-spin text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="text-blue-800 font-medium">Updating progress...</span>
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
@@ -156,7 +353,7 @@ const MyEnrollments = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Enrollments Yet</h3>
               <p className="text-gray-600 mb-6">Start your learning journey by enrolling in courses</p>
-              <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-200">
+              <button onClick={() => navigate('/course-list')} className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-200">
                 Browse Courses
               </button>
             </div>
