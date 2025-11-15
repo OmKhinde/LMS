@@ -18,13 +18,18 @@ export const AppContextProvider = (props) => {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [userData, setUserData] = useState(null);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
-  const backendurl = import.meta.env.VITE_BACKEND_URL;
+  const backendurl = import.meta.env.DEV
+                                        ? "http://localhost:5000"
+                                        : window.location.origin;
+
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const { user } = useUser();
 
   const fetchallcourses = async () => {
     try {
+
+
       const { data } = await axios.get(backendurl + '/api/course/all');
       if (data.success) {
         setAllcourses(data.courses);
