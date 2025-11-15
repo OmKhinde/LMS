@@ -10,7 +10,12 @@ import courseRouter from './routes/courseRouter.js'
 import userRouter from './routes/userRouter.js'
 import adminRoutes from './routes/adminRoutes.js'
 import errorHandler from './middlewares/errorMiddleware.js'
-import path from 'path'
+
+// FIX: Correct __dirname for ES modules
+import path from "path"
+import { fileURLToPath } from "url"
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 
@@ -19,6 +24,7 @@ connectCloudinary()
 
 app.use(cors())
 
+// Stripe needs raw body
 app.use('/stripe', (req, res, next) => {
     if (req.method === 'POST') {
         let rawBody = Buffer.alloc(0)
@@ -35,10 +41,7 @@ app.get('/', (req, res) => {
 })
 
 app.post('/stripe', stripeWebhooks)
-
-app.get('/stripe', (req, res) => {
-    res.send('Stripe webhook endpoint is ready')
-})
+app.get('/stripe', (req, res) => res.send('Stripe webhook endpoint is ready'))
 
 app.use(express.json())
 app.use(clerkMiddleware())
@@ -51,13 +54,12 @@ app.use('/api/admin', adminRoutes)
 
 app.use(errorHandler)
 
-const __dirname = path.resolve()
-const clientDistPath = path.join(__dirname, '../client/dist')
-
+// SERVE FRONTEND BUILD (Correct Path)
+const clientDistPath = path.join(__dirname, "../client/dist")
 app.use(express.static(clientDistPath))
 
 app.use((req, res) => {
-    res.sendFile(path.join(clientDistPath, 'index.html'))
+    res.sendFile(path.join(clientDistPath, "index.html"))
 })
 
 const PORT = process.env.PORT || 5000
