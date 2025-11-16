@@ -22,7 +22,12 @@ const app = express()
 await connectDB()
 connectCloudinary()
 
-app.use(cors())
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 
 // Stripe needs raw body
 app.use('/stripe', (req, res, next) => {
