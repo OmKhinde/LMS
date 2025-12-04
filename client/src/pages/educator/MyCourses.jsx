@@ -4,7 +4,7 @@ import Loading from "../../components/student/Loading";
 
 const MyCourses = () => {
 
-    const {currency, getEducatorCourses, isEducator} = useContext(AppContext);
+  const {currency, getEducatorCourses, isEducator, deleteEducatorCourse} = useContext(AppContext);
     const [courses,setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -144,6 +144,7 @@ const MyCourses = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Course Details</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Earnings</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Students</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Published On</th>
                 </tr>
               </thead>
@@ -184,6 +185,20 @@ const MyCourses = () => {
                           <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                           </svg>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={async () => {
+                              if (!confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
+                              const ok = await deleteEducatorCourse(course._id);
+                              if (ok) fetchEducatorCourses();
+                            }}
+                            className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </td>
                       <td className="px-6 py-4">

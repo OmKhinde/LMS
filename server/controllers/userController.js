@@ -1,15 +1,15 @@
 import User from "../models/User.js"
 import { clerkClient } from '@clerk/clerk-sdk-node';
-// Helper to read auth user id from Clerk middleware (supports req.auth() and req.auth)
-const getAuthUserId = (req) => {
-    const auth = (typeof req.auth === 'function') ? req.auth() : req.auth;
-    return auth?.userId || auth?.user_id || auth?.sub || auth?.id;
-}
+
 import Stripe from "stripe";
 import { Purchase } from "../models/Purchase.js";
 import Course from "../models/Course.js";
 import { CourseProgress } from "../models/CourseProgress.js";
 
+const getAuthUserId = (req) => {
+    const auth = (typeof req.auth === 'function') ? req.auth() : req.auth;
+    return auth?.userId || auth?.user_id || auth?.sub || auth?.id;
+}
 
 export const getUserData = async(req,res)=>{
     try {
@@ -17,13 +17,13 @@ export const getUserData = async(req,res)=>{
         const user = await User.findById(userId)
 
         if(!user){
-                        // Try to fetch user from Clerk and create local snapshot
+                        
                         try {
                             const clerkUser = await clerkClient.users.getUser(userId);
                             const name = clerkUser?.firstName || clerkUser?.fullName || '';
-                            const email = clerkUser?.primaryEmailAddress?.emailAddress || clerkUser?.emailAddresses?.[0]?.emailAddress || clerkUser?.email || '';
-                            const imageUrl = clerkUser?.imageUrl || clerkUser?.profileImageUrl || '';
-                            const role = clerkUser?.publicMetadata?.role || clerkUser?.public_metadata?.role || 'student';
+                            const email =  clerkUser?.emailAddresses?.[0]?.emailAddress || clerkUser?.email || '';
+                            const imageUrl = clerkUser?.imageUrl ;
+                            const role = clerkUser?.publicMetadata?.role ||  'student';
 
                             const newUser = await User.findByIdAndUpdate(userId, { _id: userId, name, email, imageUrl, role }, { upsert: true, new: true, setDefaultsOnInsert: true });
                             return res.json({ success: true, user: newUser });
@@ -51,20 +51,17 @@ export const userEnrolledCourses = async(req,res)=>{
             }
         })
         
-        console.log('👤 userEnrolledCourses: User found:', !!userData);
-        
         if(!userData){
-            console.log('❌ userEnrolledCourses: User not found for ID:', userId);
-            // Try to create local user record from Clerk to avoid repeated errors
+           
             try {
               const clerkUser = await clerkClient.users.getUser(userId);
               const name = clerkUser?.firstName || clerkUser?.fullName || '';
-              const email = clerkUser?.primaryEmailAddress?.emailAddress || clerkUser?.emailAddresses?.[0]?.emailAddress || clerkUser?.email || '';
-              const imageUrl = clerkUser?.imageUrl || clerkUser?.profileImageUrl || '';
-              const role = clerkUser?.publicMetadata?.role || clerkUser?.public_metadata?.role || 'student';
+              const email = clerkUser?.emailAddresses?.[0]?.emailAddress || clerkUser?.email || '';
+              const imageUrl = clerkUser?.imageUrl  || '';
+              const role = clerkUser?.publicMetadata?.role || 'student';
               await User.findByIdAndUpdate(userId, { _id: userId, name, email, imageUrl, role }, { upsert: true, setDefaultsOnInsert: true });
-              // Respond with empty enrolled courses rather than error
               return res.json({ success: true, enrolledCourses: [], count: 0 });
+
             } catch (clerkErr) {
               console.warn('Clerk lookup failed when creating local user:', clerkErr?.message || clerkErr);
               return res.json({success : false,message: "User Not Found"});
@@ -97,14 +94,12 @@ export const userEnrolledCourses = async(req,res)=>{
     }
 }
 
-
-//purchase the course
 export const purchaseCourse = async (req, res)=>{
    try {
     const userId = getAuthUserId(req);
     const { courseId } = req.body;
     
-    console.log('🛒 Purchase request:', { userId, courseId });
+    console.log(' Purchase request:', { userId, courseId });
     
     const userData = await User.findById(userId);
     const courseData = await Course.findById(courseId);
@@ -113,32 +108,26 @@ export const purchaseCourse = async (req, res)=>{
         return res.json({success : false ,message : 'Data Not Found'});
     }
 
-    // Check if user already enrolled
     if(userData.enrolledCourses.includes(courseId)){
         return res.json({success : false ,message : 'Already Enrolled in this Course'});
     }
 
-    // Validate course price and discount
     const price = Number(courseData.coursePrice) || 0;
     const discount = Number(courseData.discount) || 0;
-    
-    // Price calculation performed
+
     
     if (price <= 0) {
         return res.json({success: false, message: 'Invalid course price'});
     }
 
-    // Calculate final amount
     const finalAmount = (price - (discount * price / 100));
     const roundedAmount = Number(finalAmount.toFixed(2));
     
-    console.log('💵 Final amount calculation:', { finalAmount, roundedAmount });
     
     if (isNaN(roundedAmount) || roundedAmount <= 0) {
         return res.json({success: false, message: 'Invalid amount calculated'});
     }
 
-    // Save purchase record
     const newPurchase = await Purchase.create({
         courseId: courseData._id,
         userId,
@@ -147,17 +136,17 @@ export const purchaseCourse = async (req, res)=>{
 
     console.log('📝 Purchase record created:', newPurchase._id);
 
-    // Initialize Stripe with explicit test mode verification
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     
-    // Verify we're in test mode
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+ 
     const isTestMode = process.env.STRIPE_SECRET_KEY.startsWith('sk_test_');
-    // Stripe mode determined
     if (!isTestMode) {
         console.error('⚠️ WARNING: Using live Stripe keys!');
     }
 
-    // Create checkout session
+    
+    const clientBase = req.headers?.origin || process.env.CLIENT_URL || '';
+
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
@@ -172,13 +161,13 @@ export const purchaseCourse = async (req, res)=>{
             quantity: 1
         }],
         mode: 'payment',
-        success_url: `${process.env.CLIENT_URL}/loading/myenrollments?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CLIENT_URL}/course/${courseId}?cancelled=true`,
+        success_url: `${clientBase}/loading/myenrollments?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${clientBase}/course/${courseId}?cancelled=true`,
         metadata: {
             courseId,
             userId,
             purchaseId: newPurchase._id.toString(),
-            testMode: 'true'  // Added to identify test payments
+            testMode: 'true'  
         }
     });
 
@@ -205,7 +194,7 @@ export const purchaseCourse = async (req, res)=>{
    }
 }
 
-//courseProgress controller 
+
 export const updateUserCourseProgress = async(req,res)=>{
     try {
     const userId = getAuthUserId(req);
@@ -228,7 +217,6 @@ export const updateUserCourseProgress = async(req,res)=>{
             })
         }
 
-        // Return the updated progress data along with success message
         res.json({success: true, message: 'Progress Updated Successfully', progressData})
         
     } catch (error) {
@@ -237,7 +225,6 @@ export const updateUserCourseProgress = async(req,res)=>{
     }
 }
 
-//get user course progress 
 export const getUserCourseProgress = async(req,res)=>{
     try {
     const userId = getAuthUserId(req);
@@ -250,7 +237,7 @@ export const getUserCourseProgress = async(req,res)=>{
     }
 }
 
-// Add user rating to course
+
 export const addUserRating = async (req, res)=>{
     const userId = getAuthUserId(req);
     const { courseId, rating } = req.body;
@@ -271,14 +258,11 @@ export const addUserRating = async (req, res)=>{
             return res.json({ success: false, message: 'User does not purchased this course' });
         }
 
-        // Check if user already rated this course
         const existingRating = course.courseRatings.find(r => r.userId.toString() === userId);
         
         if(existingRating){
-            // Update existing rating
             existingRating.rating = rating;
         } else {
-            // Add new rating
             course.courseRatings.push({
                 userId,
                 rating
@@ -303,21 +287,18 @@ export const adminCompletePurchase = async (req, res) => {
         if (!userId || !courseId) {
             return res.json({success: false, message: 'userId and courseId are required'});
         }
-        
-        // Find the user and course
+   
         const user = await User.findById(userId);
         const course = await Course.findById(courseId);
         
         if (!user || !course) {
             return res.json({success: false, message: 'User or course not found'});
         }
-        
-        // Check if already enrolled
+  
         if (user.enrolledCourses.includes(courseId)) {
             return res.json({success: false, message: 'User already enrolled in this course'});
         }
-        
-        // Enroll the user
+
         user.enrolledCourses.push(courseId);
         await user.save();
         

@@ -109,6 +109,37 @@ export const stripeWebhooks = async (req, res) => {
     
     try {
         switch (event.type) {
+            case 'checkout.session.completed': {
+                // Stripe checkout session completed directly
+                const session = event.data.object;
+                const purchaseId = session?.metadata?.purchaseId;
+
+                console.log('🔔 checkout.session.completed received, session id:', session?.id, 'purchaseId:', purchaseId);
+
+                if (purchaseId) {
+                    const purchaseData = await Purchase.findById(purchaseId);
+                    if (purchaseData) {
+                        const userData = await User.findById(purchaseData.userId);
+                        const courseData = await Course.findById(purchaseData.courseId);
+
+                        // Update purchase status and stripeSessionId
+                        await Purchase.findByIdAndUpdate(purchaseId, { status: 'completed', stripeSessionId: session.id });
+
+                        // Enroll user
+                        if (courseData && !courseData.enrolledStudents.includes(purchaseData.userId)) {
+                            courseData.enrolledStudents.push(purchaseData.userId);
+                            await courseData.save();
+                        }
+
+                        if (userData && !userData.enrolledCourses.includes(purchaseData.courseId)) {
+                            userData.enrolledCourses.push(purchaseData.courseId);
+                            await userData.save();
+                        }
+                    }
+                }
+
+                break;
+            }
             case 'payment_intent.succeeded': {
                 const paymentIntent = event.data.object;
                 const paymentIntentId = paymentIntent.id;
@@ -199,5 +230,5 @@ export const stripeWebhooks = async (req, res) => {
         console.error(error.stack);
         res.status(500).send(`Error processing webhook: ${error.message}`);
     }
-    // webhook handler complete
+    
 }

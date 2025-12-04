@@ -11,7 +11,7 @@ import userRouter from './routes/userRouter.js'
 import adminRoutes from './routes/adminRoutes.js'
 import errorHandler from './middlewares/errorMiddleware.js'
 
-// FIX: Correct __dirname for ES modules
+
 import path from "path"
 import { fileURLToPath } from "url"
 const __filename = fileURLToPath(import.meta.url)
@@ -24,7 +24,10 @@ connectCloudinary()
 
 app.use(
   cors({
-    origin: true,
+    origin: [
+      "http://localhost:5173",
+      "https://mylms-edemy.vercel.app",
+    ],
     credentials: true,
   })
 );

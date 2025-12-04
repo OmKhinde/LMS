@@ -3,12 +3,11 @@ import { v2 as cloudinary } from 'cloudinary'
 import Course from '../models/Course.js'
 import { Purchase } from '../models/Purchase.js '
 import User from '../models/User.js'
+import { CourseProgress } from '../models/CourseProgress.js'
 
 export const updateRoleToEducator = async (req,res)=>{
         try {
-
             const userId = req.auth.userId
-            
             await clerkClient.users.updateUserMetadata(userId,{
                 publicMetadata:{
                     role : 'educator',
@@ -17,7 +16,6 @@ export const updateRoleToEducator = async (req,res)=>{
             res.json({
                 success:true,message : 'You can publish a course now'
             })
-
         } catch (error) {
             res.json({
                 success:false,message : error.message
@@ -25,7 +23,6 @@ export const updateRoleToEducator = async (req,res)=>{
         }
 }
 
-//Add New Course
 export const addCourse = async(req,res)=>{
     try{
         const {courseData} = req.body;
@@ -67,7 +64,6 @@ export const educatorDashboardData = async(req, res)=>{
         const totalCourses = courses.length;
         const courseIds = courses.map(course => course._id);
 
-        //total earnings from puraches
         const purchases = await Purchase.find({
             courseId : {$in : courseIds},
             status :'completed'
@@ -77,7 +73,6 @@ export const educatorDashboardData = async(req, res)=>{
             sum = sum + purchase.amount,0
         )
 
-        // Collect unique enrolled student IDs with their course titles
         const enrolledStudentsData = [];
         const uniqueStudentIds = new Set();
         
@@ -98,7 +93,6 @@ export const educatorDashboardData = async(req, res)=>{
         const totalStudents = uniqueStudentIds.size;
         const totalEnrollments = enrolledStudentsData.length;
 
-        // Monthly statistics (current month)
         const currentMonth = new Date();
         const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
         
@@ -111,7 +105,6 @@ export const educatorDashboardData = async(req, res)=>{
         const monthlyRevenue = monthlyPurchases.reduce((sum, purchase) => sum + purchase.amount, 0);
         const monthlyEnrollments = monthlyPurchases.length;
 
-        // Top performing courses
         const topCourses = await Promise.all(courses.map(async (course) => {
             const courseRevenue = purchases
                 .filter(p => p.courseId.toString() === course._id.toString())
@@ -130,18 +123,17 @@ export const educatorDashboardData = async(req, res)=>{
         const topPerformingCourses = topCourses.slice(0, 5);
 
         // Note: For completion rate, you'll need to track this in your Course Progress model
-        const completedEnrollments = 0; // This needs to be calculated based on your progress tracking
+        const completedEnrollments = 0;
 
-        // Calculate averages
+    
         const avgRating = courses.length > 0 
             ? (courses.reduce((sum, course) => sum + (course.rating || 4.5), 0) / courses.length).toFixed(1)
             : 4.5;
         
         const completionRate = totalEnrollments > 0 
             ? Math.round((completedEnrollments / totalEnrollments) * 100)
-            : 78; // Default completion rate
+            : 78; 
 
-        // Sample notifications (you can make this dynamic based on actual conditions)
         const notifications = [
             {
                 type: 'success',
@@ -190,7 +182,6 @@ export const educatorDashboardData = async(req, res)=>{
     }
 }
 
-// Get Enrolled Students Data with Purchase Data
 export const getEnrolledStudentsData = async (req, res) => {
     try {
         const educator = req.auth.userId;
@@ -211,3 +202,34 @@ export const getEnrolledStudentsData = async (req, res) => {
         res.json({success: false, message: error.message});
     }
 } 
+
+export const deleteCourse = async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const auth = (typeof req.auth === 'function') ? req.auth() : req.auth;
+        const userId = auth?.userId || auth?.user_id || auth?.sub || auth?.id;
+
+        if (!userId) return res.status(401).json({ success: false, message: 'Not authenticated' });
+
+        const course = await Course.findById(courseId);
+        if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+        if (String(course.educator) !== String(userId)) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this course' });
+        }
+
+        await Purchase.deleteMany({ courseId: course._id });
+
+        await CourseProgress.deleteMany({ courseId: String(course._id) });
+
+        await User.updateMany({ enrolledCourses: course._id }, { $pull: { enrolledCourses: course._id } });
+
+        await Course.findByIdAndDelete(courseId);
+
+        res.json({ success: true, message: 'Course deleted successfully' });
+
+    } catch (error) {
+        console.error('deleteCourse error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+}

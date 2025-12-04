@@ -58,8 +58,8 @@ const CourseCard = ({ course }) => {
               <span className="text-gray-400 text-sm">({course.courseRatings?.length || 0} reviews)</span>
             </div>
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
-              <span className="text-gray-400 line-through text-sm">{currency}{(course.coursePrice / 100)?.toFixed(2) || '0.00'}</span>
-              <span className="text-blue-600 font-bold text-lg">{currency}{((course.coursePrice - (course.coursePrice * (course.discount || 0) / 100)) / 100)?.toFixed(2) || '0.00'}</span>
+              <span className="text-gray-400 line-through text-sm">{currency}{(Number(course.coursePrice) || 0).toFixed(2)}</span>
+              <span className="text-blue-600 font-bold text-lg">{currency}{(Number(course.coursePrice) - (Number(course.coursePrice) * (course.discount || 0) / 100)).toFixed(2)}</span>
               <div className="ml-auto">
                 <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg text-xs font-medium group-hover:bg-blue-100 transition-colors">
                   View Course

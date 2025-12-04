@@ -18,9 +18,11 @@ export const AppContextProvider = (props) => {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [userData, setUserData] = useState(null);
   const [progressRefreshTrigger, setProgressRefreshTrigger] = useState(0);
-  const backendurl = import.meta.env.DEV
-                                        ? "http://localhost:5000"
-                                        : window.location.origin;
+  const backendurl = import.meta.env.VITE_BACKEND_URL
+      ? import.meta.env.VITE_BACKEND_URL.replace(/['"]/g, '')
+      : (import.meta.env.DEV
+          ? 'http://localhost:5000'
+          : window.location.origin);
 
   const navigate = useNavigate();
   const { getToken } = useAuth();
@@ -28,8 +30,6 @@ export const AppContextProvider = (props) => {
 
   const fetchallcourses = async () => {
     try {
-
-
       const { data } = await axios.get(backendurl + '/api/course/all');
       if (data.success) {
         setAllcourses(data.courses);
@@ -40,9 +40,8 @@ export const AppContextProvider = (props) => {
     } catch (error) {
       console.error('Full error object:', error);
       
-      // Axios error handling
       if (error.response) {
-        // Server responded with error status (4xx, 5xx)
+
         console.error('Response error:', error.response.data);
         console.error('Status:', error.response.status);
         toast.error(error.response.data?.message || `Server Error: ${error.response.status}`);
@@ -51,7 +50,6 @@ export const AppContextProvider = (props) => {
         console.error('Request error:', error.request);
         toast.error('No response from server. Please check your internet connection.');
       } else {
-        // Something else happened
         console.error('General error:', error.message);
         toast.error(error.message || 'An unexpected error occurred');
       }
@@ -331,6 +329,33 @@ export const AppContextProvider = (props) => {
     }
   };
 
+  const deleteEducatorCourse = async (courseId) => {
+    try {
+      const token = await getToken();
+      const { data } = await axios.delete(`${backendurl}/api/educator/courses/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (data.success) {
+        toast.success(data.message || 'Course deleted');
+        return true;
+      } else {
+        toast.error(data.message || 'Failed to delete course');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      if (error.response) {
+        toast.error(error.response.data?.message || `Server Error: ${error.response.status}`);
+      } else if (error.request) {
+        toast.error('No response from server. Please check your internet connection.');
+      } else {
+        toast.error(error.message || 'Failed to delete course');
+      }
+      return false;
+    }
+  };
+
   const value = {
     currency,
     allcourses,
@@ -353,6 +378,7 @@ export const AppContextProvider = (props) => {
     getEducatorDashboardData,
     getEnrolledStudentsData,
     getEducatorCourses,
+    deleteEducatorCourse,
     updateRoleToEducator
   }
 
