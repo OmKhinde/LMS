@@ -101,7 +101,7 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="w-64 h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 border-r border-gray-700/50 shadow-2xl flex flex-col relative overflow-hidden">
+    <div className="w-60 sm:w-64 h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 border-r border-gray-700/50 shadow-2xl flex flex-col relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-purple-600/5"></div>
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent"></div>

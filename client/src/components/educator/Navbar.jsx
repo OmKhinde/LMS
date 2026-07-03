@@ -49,10 +49,10 @@ const Navbar = ({ toggleSidebar }) => {
   ];
 
   return (
-    <nav className="bg-gradient-to-r from-white via-blue-50/30 to-white border-b border-gray-200/50 px-4 py-3 shadow-lg backdrop-blur-sm z-10">
-      <div className="flex justify-between items-center">
+    <nav className="bg-gradient-to-r from-white via-blue-50/30 to-white border-b border-gray-200/50 px-3 sm:px-4 py-2.5 sm:py-3 shadow-lg backdrop-blur-sm z-10">
+      <div className="flex justify-between items-center gap-2">
         {/* Left side: toggle button, logo and search */}
-        <div className="flex items-center">
+        <div className="flex items-center min-w-0">
           {/* Toggle sidebar button */}
           <button
             onClick={toggleSidebar}
@@ -64,7 +64,7 @@ const Navbar = ({ toggleSidebar }) => {
           </button>
 
           {/* App Logo */}
-          <Link to="/educator" className="mr-6 group" title="Go to Main Dashboard">
+          <Link to="/educator" className="mr-3 sm:mr-6 group flex-shrink-0" title="Go to Main Dashboard">
             <img 
               src={assets.logo} 
               alt="LMS Logo" 
@@ -73,7 +73,7 @@ const Navbar = ({ toggleSidebar }) => {
           </Link>
 
           {/* Search bar */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center min-w-[180px] lg:min-w-[220px]">
             <div className="relative group">
               <input
                 type="text"

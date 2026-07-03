@@ -75,14 +75,16 @@ const CourseList = () => {
         {input && (
           <div className="bg-white py-3 px-4 shadow-sm">
             <div className="container mx-auto max-w-7xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="font-medium mr-2">Search results for:</span>
-                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md">{input}</span>
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">Search results for:</span>
+                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md break-all max-w-full sm:max-w-xs">
+                    {input}
+                  </span>
                 </div>
                 <button 
                   onClick={() => navigate('/course-list')}
-                  className="flex items-center text-gray-500 hover:text-blue-600 transition-colors"
+                  className="flex items-center text-gray-500 hover:text-blue-600 transition-colors whitespace-nowrap"
                 >
                   <span className="mr-2">Clear search</span>
                   <img src={assets.cross_icon} alt="Clear" className="w-4 h-4" />

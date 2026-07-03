@@ -47,18 +47,18 @@ const Loading = () => {
   }, []); // ❗ run only once – prevents infinite redirects
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center z-50">
-      <div className="text-center">
-        <div className="relative mb-8">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center z-50 px-4">
+      <div className="text-center max-w-sm w-full">
+        <div className="relative mb-8 flex items-center justify-center">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
           <div
-            className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto absolute top-2 left-1/2 transform -translate-x-1/2"
+            className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-purple-200 border-t-purple-600 rounded-full absolute"
             style={{ animation: "spin 1.5s linear infinite reverse" }}
           ></div>
         </div>
 
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-700 mb-2 animate-pulse">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-700 mb-2 animate-pulse">
             Loading Course
           </h2>
           <div className="flex items-center justify-center space-x-1">
@@ -74,7 +74,7 @@ const Loading = () => {
           </div>
         </div>
 
-        <div className="w-64 bg-gray-200 rounded-full h-2 mb-4 overflow-hidden">
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-4 overflow-hidden max-w-xs mx-auto">
           <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse"></div>
         </div>
 

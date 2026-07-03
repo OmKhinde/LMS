@@ -4,8 +4,8 @@ import { assets } from "../../assets/assets";
 const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white w-full mt-10">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 py-12 border-b border-white/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 py-10 sm:py-12 border-b border-white/20">
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center">

@@ -141,48 +141,48 @@ const CourseDetailes = () => {
 
   return courseData ? (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-purple-50/20 py-8">
-        <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-          <div className="flex lg:flex-row flex-col gap-8 items-start">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-purple-50/20 py-6 sm:py-8">
+        <div className="container mx-auto px-3 sm:px-6 lg:px-8 max-w-7xl">
+          <div className="flex lg:flex-row flex-col gap-6 lg:gap-8 items-start">
             
             {/* Left Column */}
-            <div className="lg:w-2/3 w-full space-y-6">
+            <div className="lg:w-2/3 w-full space-y-5 sm:space-y-6">
               {/* Course Header Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight mb-6">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-7 hover:shadow-xl transition-shadow duration-300">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight mb-4 sm:mb-6 break-words">
                   {courseData.courseTitle}
                 </h1>
                 <div className="prose prose-gray max-w-none">
-                  <div className="text-base text-gray-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: courseData.courseDescription.slice(0, 200) + '...' }} />
+                  <div className="text-xs sm:text-base text-gray-600 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: courseData.courseDescription.slice(0, 200) + '...' }} />
                 </div>
               </div>
 
               {/* Course Stats Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-                <div className="flex flex-wrap items-center gap-6 mb-4">
-                  <div className="flex items-center bg-amber-50 rounded-full px-4 py-2">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 sm:p-6">
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-4">
+                  <div className="flex items-center bg-amber-50 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 w-full sm:w-auto">
                     <span className="text-amber-600 font-bold text-base mr-2">{calculateRating(courseData)}</span>
-                    <div className="flex mr-2">
+                    <div className="flex mr-2 flex-shrink-0">
                       {[...Array(5)].map((_, i) => (
-                        <img key={i} src={assets.star} alt="star" className="w-5 h-5" />
+                        <img key={i} src={assets.star} alt="star" className="w-4 h-4" />
                       ))}
                     </div>
-                    <span className="text-gray-600 text-sm font-medium">
+                    <span className="text-gray-600 text-[11px] sm:text-sm font-medium truncate">
                       ({courseData.courseRatings?.length || 0} {(courseData.courseRatings?.length || 0) !== 1 ? "Reviews" : "Review"})
                     </span>
                   </div>
                   
-                  <div className="flex items-center bg-blue-50 rounded-full px-4 py-2">
+                  <div className="flex items-center bg-blue-50 rounded-full px-3 sm:px-4 py-1.5 sm:py-2">
                     <svg className="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <span className="text-blue-800 font-medium">
+                    <span className="text-blue-800 text-sm sm:text-base font-medium">
                       {courseData.enrolledStudents?.length || 0} {(courseData.enrolledStudents?.length || 0) !== 1 ? "Students" : "Student"}
                     </span>
                   </div>
                 </div>
                 
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-600 text-sm sm:text-base">
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
                   </svg>
@@ -191,8 +191,8 @@ const CourseDetailes = () => {
               </div>
       
               {/* Course Structure Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
                   <svg className="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
@@ -202,12 +202,12 @@ const CourseDetailes = () => {
                 <div className="space-y-3">
                   {courseData.courseContent?.map((chapter,index)=>(
                     <div className="border border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-xl overflow-hidden hover:shadow-md transition-all duration-300" key={index}>
-                      <div className="flex items-center justify-between px-6 py-4 cursor-pointer select-none hover:bg-blue-50 transition-colors duration-200" onClick={() => toggleSection(index)}>
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 cursor-pointer select-none hover:bg-blue-50 transition-colors duration-200" onClick={() => toggleSection(index)}>
+                        <div className="flex items-center gap-3 min-w-0 pr-2">
                           <div className={`transform transition-transform duration-300 ${openSections[index] ? 'rotate-180' : ''} bg-blue-100 rounded-full p-2`}>
                             <img className="w-4 h-4" src={assets.down_arrow_icon} alt="arrow icon" />
                           </div>
-                          <h3 className="font-semibold text-gray-800 text-base">{chapter.chapterTitle}</h3>
+                          <h3 className="font-semibold text-gray-800 text-xs sm:text-base truncate max-w-[180px] sm:max-w-xs">{chapter.chapterTitle}</h3>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-blue-600">{chapter.chapterContent?.length || 0} lectures</p>
@@ -219,21 +219,21 @@ const CourseDetailes = () => {
                         <div className="bg-white border-t border-gray-100">
                           <ul className="divide-y divide-gray-50">
                             {chapter.chapterContent?.map((lecture,idx) =>(
-                             <li key={idx} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50 transition-colors duration-200">
+                             <li key={idx} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-2.5 sm:py-3 hover:bg-gray-50 transition-colors duration-200">
                                 <div className="bg-green-100 rounded-full p-2">
                                   <img src={assets.play_icon} alt="play icon" className="w-4 h-4" />
                                 </div>
-                                <div className="flex items-center justify-between w-full">
-                                  <p className="font-medium text-gray-700 flex-1">{lecture.lectureTitle}</p>
-                                  <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-between w-full min-w-0">
+                                  <p className="font-medium text-gray-700 flex-1 text-xs sm:text-sm truncate">{lecture.lectureTitle}</p>
+                                  <div className="flex items-center gap-2 sm:gap-3">
                                     {lecture.isPreviewFree && 
-                                      <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full cursor-pointer hover:bg-green-200 transition-colors" onClick={()=>{
+                                      <span className="bg-green-100 text-green-800 text-[11px] sm:text-xs font-medium px-2 py-1 rounded-full cursor-pointer hover:bg-green-200 transition-colors" onClick={()=>{
                                         setPlayerdata({videoId : lecture.lectureUrl.split('/').pop()})
                                       }}>
                                         Preview
                                       </span>
                                     }
-                                    <span className="text-sm text-gray-500 font-medium">
+                                    <span className="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">
                                       {humanizeDuration(lecture.lectureDuration * 60 * 1000,{units:['h','m']})}
                                     </span>
                                   </div>
@@ -249,23 +249,23 @@ const CourseDetailes = () => {
               </div>
 
               {/* Course Description Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 sm:p-7">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
                   <svg className="w-6 h-6 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Course Description
                 </h3>
-                <div className="prose prose-base prose-gray max-w-none">
+                <div className="prose prose-sm sm:prose-base prose-gray max-w-none">
                   <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: courseData.courseDescription}} />
                 </div>
               </div>
             </div>
 
             {/* Right Column - Course Preview & Purchase */}
-            <div className="lg:w-1/3 w-full">
+            <div className="lg:w-1/3 w-full mt-6 lg:mt-0">
               {/* Video/Thumbnail Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-6 sticky top-6">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-6 lg:sticky lg:top-6">
                 <div className="relative">
                   {
                     playerdata ? 
@@ -286,54 +286,54 @@ const CourseDetailes = () => {
                   )}
                 </div>
              
-                <div className="p-6">
+                <div className="p-5 sm:p-6">
                   {/* Urgency Banner */}
-                  <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-4 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
                     <img className="w-4 h-4" src={assets.time_left_clock_icon} alt="time_left_clock_icon" />
-                    <p className="text-red-600 text-sm font-medium">
+                    <p className="text-red-600 text-xs sm:text-sm font-medium">
                       <span className="font-bold">5 days</span> left at this price!
                     </p>
                   </div>
 
                   {/* Pricing Section */}
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-3 mb-2">
-                      <span className="text-3xl font-bold text-gray-900">
+                  <div className="mb-5 sm:mb-6">
+                    <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-2">
+                      <span className="text-2xl sm:text-3xl font-bold text-gray-900">
                         {currency}{(courseData.coursePrice - courseData.discount * courseData.coursePrice/100).toFixed(2)}
                       </span>
-                      <span className="text-lg text-gray-500 line-through">
+                      <span className="text-base sm:text-lg text-gray-500 line-through">
                         {currency}{courseData.coursePrice}
                       </span>
                     </div>
-                    <div className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">
+                    <div className="inline-block bg-green-100 text-green-800 text-xs sm:text-sm font-semibold px-3 py-1 rounded-full">
                       {courseData.discount}% OFF
                     </div>
                   </div>
 
                   {/* Course Stats */}
-                  <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+                  <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-xl">
                     <div className="text-center">
                       <div className="flex items-center justify-center mb-1">
                         <img src={assets.star} alt="star icon" className="w-4 h-4" />
                       </div>
-                      <p className="text-sm font-semibold text-gray-900">{calculateRating(courseData)}</p>
-                      <p className="text-xs text-gray-500">Rating</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-900">{calculateRating(courseData)}</p>
+                      <p className="text-[11px] sm:text-xs text-gray-500">Rating</p>
                     </div>
                     
                     <div className="text-center">
                       <div className="flex items-center justify-center mb-1">
                         <img src={assets.time_clock_icon} alt="clock icon" className="w-4 h-4" />
                       </div>
-                      <p className="text-sm font-semibold text-gray-900">{calculateCourseDuration(courseData)}</p>
-                      <p className="text-xs text-gray-500">Duration</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-900">{calculateCourseDuration(courseData)}</p>
+                      <p className="text-[11px] sm:text-xs text-gray-500">Duration</p>
                     </div>
                     
                     <div className="text-center">
                       <div className="flex items-center justify-center mb-1">
                         <img src={assets.lesson_icon} alt="lesson icon" className="w-4 h-4" />
                       </div>
-                      <p className="text-sm font-semibold text-gray-900">{calculateNoofLectures(courseData)}</p>
-                      <p className="text-xs text-gray-500">Lessons</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-900">{calculateNoofLectures(courseData)}</p>
+                      <p className="text-[11px] sm:text-xs text-gray-500">Lessons</p>
                     </div>
                   </div>
 
@@ -341,7 +341,7 @@ const CourseDetailes = () => {
                   <button 
                     onClick={enrollCourse}
                     disabled={isalreadyEnrolled}
-                    className={`w-full py-4 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] mb-4 ${
+                    className={`w-full py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] mb-3 sm:mb-4 ${
                       isalreadyEnrolled 
                         ? 'bg-gray-400 cursor-not-allowed text-white' 
                         : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
@@ -351,48 +351,48 @@ const CourseDetailes = () => {
                   </button>
                   
                   {/* Money Back Guarantee */}
-                  <div className="text-center mb-6">
-                    <p className="text-sm text-gray-600">30-Day Money-Back Guarantee</p>
+                  <div className="text-center mb-4 sm:mb-6">
+                    <p className="text-xs sm:text-sm text-gray-600">30-Day Money-Back Guarantee</p>
                   </div>
                   
                   {/* Course Includes */}
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
                       <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                       What's included
                     </h4>
-                    <ul className="space-y-3">
+                    <ul className="space-y-2.5 sm:space-y-3">
                       <li className="flex items-start gap-3">
                         <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm text-gray-700">Lifetime access with free updates</span>
+                        <span className="text-xs sm:text-sm text-gray-700">Lifetime access with free updates</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm text-gray-700">Step-by-step, hands-on project guidance</span>
+                        <span className="text-xs sm:text-sm text-gray-700">Step-by-step, hands-on project guidance</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm text-gray-700">Downloadable resources and source code</span>
+                        <span className="text-xs sm:text-sm text-gray-700">Downloadable resources and source code</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm text-gray-700">Interactive quizzes to test knowledge</span>
+                        <span className="text-xs sm:text-sm text-gray-700">Interactive quizzes to test knowledge</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm text-gray-700">Certificate of completion</span>
+                        <span className="text-xs sm:text-sm text-gray-700">Certificate of completion</span>
                       </li>
                     </ul>
                   </div>

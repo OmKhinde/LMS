@@ -163,12 +163,12 @@ const Player = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-purple-50/20">
-      <div className="container mx-auto px-4 lg:px-8 py-8 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="container mx-auto px-3 lg:px-8 py-6 sm:py-8 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
           {/* Left Column - Course Structure */}
           <div className="lg:col-span-1 order-2 lg:order-1">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sticky top-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:sticky lg:top-6">
               <div className="flex items-center mb-6">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
                   <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -177,7 +177,7 @@ const Player = () => {
                 </div>
                 <h2 className="text-xl font-bold text-gray-900">Course Structure</h2>
               </div>
-              <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 space-y-3">
+              <div className="max-h-80 sm:max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 space-y-3">
                 {courseData && courseData.courseContent.map((chapter,index)=>(
                   <div className="border border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-xl overflow-hidden hover:shadow-md transition-all duration-300" key={index}>
                     <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-blue-50 transition-colors duration-200" onClick={() => toggleSection(index)}>

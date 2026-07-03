@@ -1,39 +1,22 @@
-import Course from "../models/Course.js";
+import asyncHandler from '../middleware/asyncHandler.js'
+import * as courseService from '../services/courseService.js'
 
-// Get All Courses
-export const getAllCourse = async (req, res) => {
-    try {
-        const courses = await Course.find({isPublished: true}).select(
-            ['-courseContent', '-enrolledStudents']).populate({path: 'educator'})
+/**
+ * Course controller — thin HTTP handlers.
+ * All business logic is in courseService.
+ * asyncHandler catches errors → global error handler.
+ */
 
-        res.json({ success: true, courses })
-    } catch (error) {
-        res.json({ success: false, message: error.message })
-    }
-}
+// Get All Published Courses (with pagination & search)
+export const getAllCourses = asyncHandler(async (req, res) => {
+  const { page, limit, search } = req.validated?.query || req.query
+  const result = await courseService.getAllCourses(page, limit, search)
+  res.status(200).json({ success: true, ...result })
+})
 
-// Get Course by Id
-export const getCourseId = async (req, res) => {
-    const {id} = req.params
-
-    try {
-        const courseData = await Course.findById(id).populate({path: 'educator'})
-        
-        if (!courseData) {
-            return res.json({ success: false, message: 'Course not found' })
-        }
-
-        // Remove lectureUrl if isPreviewFree is false
-        courseData.courseContent.forEach(chapter => {
-            chapter.chapterContent.forEach(lecture => {
-                if(!lecture.isPreviewFree){
-                    lecture.lectureUrl = "";
-                }
-            })
-        })
-
-        res.json({ success: true, course: courseData })
-    } catch (error) {
-        res.json({ success: false, message: error.message })
-    }
-}
+// Get Course by ID
+export const getCourseById = asyncHandler(async (req, res) => {
+  const { id } = req.validated?.params || req.params
+  const course = await courseService.getCourseById(id)
+  res.status(200).json({ success: true, course })
+})
