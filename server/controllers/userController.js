@@ -37,6 +37,15 @@ export const purchaseCourse = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, ...result })
 })
 
+// Verify Payment (handles the race condition with Stripe webhook)
+export const verifyPayment = asyncHandler(async (req, res) => {
+  const userId = req.userId || getAuthUserId(req)
+  const { sessionId } = req.validated?.body || req.body
+
+  const result = await purchaseService.verifyAndCompletePayment(sessionId, userId)
+  res.status(200).json({ success: true, ...result })
+})
+
 // Update Course Progress
 export const updateUserCourseProgress = asyncHandler(async (req, res) => {
   const userId = req.userId || getAuthUserId(req)

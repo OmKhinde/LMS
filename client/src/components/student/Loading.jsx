@@ -1,9 +1,13 @@
-import React, { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useContext } from "react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { AppContext } from "../../context/AppContext";
+import axios from "axios";
 
 const Loading = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { backendurl, getToken, fetchUserEnrolledCourses } = useContext(AppContext);
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -33,7 +37,34 @@ const Loading = () => {
       destinationPath = "/";
     }
 
-    const timer = setTimeout(() => {
+    const processAndNavigate = async () => {
+      // Check if this is a Stripe payment redirect
+      const sessionId = searchParams.get("session_id");
+
+      if (sessionId) {
+        console.log("💳 Payment redirect detected, verifying payment...");
+        try {
+          const token = await getToken();
+          // Call the server to verify & complete the enrollment
+          const { data } = await axios.post(
+            `${backendurl}/api/user/verify-payment`,
+            { sessionId },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          console.log("✅ Payment verified:", data);
+
+          // Refresh enrolled courses in context so MyEnrollments has fresh data
+          if (fetchUserEnrolledCourses) {
+            await fetchUserEnrolledCourses();
+          }
+        } catch (err) {
+          console.error("⚠️ Payment verification error:", err.response?.data || err.message);
+          // Still navigate — the webhook may complete the enrollment later,
+          // and MyEnrollments has its own retry logic as a fallback
+        }
+      }
+
+      // Navigate to the destination
       console.log("Navigating to:", destinationPath);
       try {
         navigate(destinationPath, { replace: true });
@@ -41,9 +72,9 @@ const Loading = () => {
         console.error("Navigation error:", err);
         navigate("/", { replace: true });
       }
-    }, 700);
+    };
 
-    return () => clearTimeout(timer);
+    processAndNavigate();
   }, []); // ❗ run only once – prevents infinite redirects
 
   return (
@@ -59,7 +90,7 @@ const Loading = () => {
 
         <div className="mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-700 mb-2 animate-pulse">
-            Loading Course
+            Processing Payment
           </h2>
           <div className="flex items-center justify-center space-x-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -81,21 +112,21 @@ const Loading = () => {
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex items-center justify-center space-x-2 animate-pulse">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-            <span>Fetching course data...</span>
+            <span>Verifying payment...</span>
           </div>
           <div
             className="flex items-center justify-center space-x-2 animate-pulse"
             style={{ animationDelay: "0.5s" }}
           >
             <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
-            <span>Loading content...</span>
+            <span>Completing enrollment...</span>
           </div>
           <div
             className="flex items-center justify-center space-x-2 animate-pulse"
             style={{ animationDelay: "1s" }}
           >
             <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-            <span>Preparing interface...</span>
+            <span>Preparing your dashboard...</span>
           </div>
         </div>
       </div>
@@ -104,3 +135,4 @@ const Loading = () => {
 };
 
 export default Loading;
+

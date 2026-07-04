@@ -3,6 +3,7 @@ import {
   addUserRating,
   getUserData,
   purchaseCourse,
+  verifyPayment,
   updateUserCourseProgress,
   userEnrolledCourses,
   getUserCourseProgress,
@@ -18,6 +19,7 @@ import {
   batchProgressSchema,
   addRatingSchema,
   adminCompletePurchaseSchema,
+  verifyPaymentSchema,
 } from '../validators/userValidators.js'
 
 const userRouter = express.Router()
@@ -34,6 +36,7 @@ userRouter.get('/myenrollments', userEnrolledCourses)
 
 // Validated mutation routes
 userRouter.post('/purchase', validate(purchaseCourseSchema), purchaseCourse)
+userRouter.post('/verify-payment', validate(verifyPaymentSchema), verifyPayment)
 userRouter.post('/update-course-progress', validate(updateProgressSchema), updateUserCourseProgress)
 userRouter.post('/get-course-progress', validate(getCourseProgressSchema), getUserCourseProgress)
 userRouter.post('/batch-progress', validate(batchProgressSchema), getBatchProgress)  // NEW — fixes N+1

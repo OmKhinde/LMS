@@ -36,25 +36,42 @@ export const createPurchase = async (userId, courseId, origin) => {
   }
 
   // 3. Check if already enrolled (fixes FLOW-5)
-  if (userData.enrolledCourses.includes(courseId)) {
+  if (userData.enrolledCourses.some(id => id.toString() === courseId.toString())) {
     throw new AppError('Already enrolled in this course', 409)
   }
 
-  // 4. Check for existing pending purchase — cleanup stale ones
-  const existingPurchase = await Purchase.findOne({
-    userId,
-    courseId,
-    status: PURCHASE_STATUS.PENDING,
-  })
+  // 4. Handle existing purchase records (pending, failed, or completed)
+  const existingPurchase = await Purchase.findOne({ userId, courseId })
 
   if (existingPurchase) {
-    // Clean up stale pending purchase (older than 30 minutes)
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
-    if (existingPurchase.createdAt < thirtyMinutesAgo) {
-      await Purchase.findByIdAndUpdate(existingPurchase._id, { status: PURCHASE_STATUS.FAILED })
-    } else {
-      throw new AppError('You have a pending purchase for this course. Please complete or wait.', 409)
+    if (existingPurchase.status === PURCHASE_STATUS.COMPLETED) {
+      // Purchase completed but user not in enrolledCourses — fix the enrollment
+      await handleSuccessfulPayment(existingPurchase._id.toString())
+      throw new AppError('Already enrolled in this course', 409)
     }
+
+    if (existingPurchase.status === PURCHASE_STATUS.PENDING) {
+      // Check if the Stripe session was actually paid (webhook may have missed)
+      if (existingPurchase.stripeSessionId) {
+        try {
+          const stripeSession = await stripe.checkout.sessions.retrieve(existingPurchase.stripeSessionId)
+          if (stripeSession.payment_status === 'paid') {
+            // Payment went through but webhook didn't fire — complete enrollment now
+            await handleSuccessfulPayment(existingPurchase._id.toString())
+            throw new AppError('Payment was already completed. You are now enrolled!', 409)
+          }
+        } catch (stripeErr) {
+          // Stripe session retrieval failed — session may have expired, proceed to create new one
+          console.warn('Could not retrieve Stripe session:', stripeErr.message)
+        }
+      }
+
+      // Pending purchase that was never paid — reset it for reuse
+      console.log(`Resetting stale pending purchase ${existingPurchase._id} for reuse`)
+    }
+
+    // For failed or stale pending purchases: reuse the existing record
+    // (avoids unique index violation on {userId, courseId})
   }
 
   // 5. Calculate amount SERVER-SIDE (never trust client)
@@ -72,15 +89,21 @@ export const createPurchase = async (userId, courseId, origin) => {
     throw new AppError('Invalid amount calculated', 400)
   }
 
-  // 6. Create Purchase record
-  const newPurchase = await Purchase.create({
-    courseId: courseData._id,
-    userId,
-    amount: roundedAmount,
-  })
+  // 6. Upsert Purchase record (reuse existing or create new)
+  const newPurchase = await Purchase.findOneAndUpdate(
+    { userId, courseId },
+    {
+      courseId: courseData._id,
+      userId,
+      amount: roundedAmount,
+      status: PURCHASE_STATUS.PENDING,
+      stripeSessionId: null, // will be set after Stripe session creation
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  )
 
   // 7. Create Stripe checkout session
-  const clientBase = origin || process.env.CLIENT_URL || ''
+  const clientBase =  process.env.CLIENT_URL || ''
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -91,7 +114,7 @@ export const createPurchase = async (userId, courseId, origin) => {
           name: courseData.courseTitle,
           description: courseData.courseDescription?.substring(0, 200) || courseData.courseTitle,
         },
-        unit_amount: Math.floor(roundedAmount * 100),
+        unit_amount: Math.round(roundedAmount * 100),
       },
       quantity: 1,
     }],
@@ -104,6 +127,9 @@ export const createPurchase = async (userId, courseId, origin) => {
       purchaseId: newPurchase._id.toString(),
     },
   })
+
+  // 8. Save the Stripe session ID on the purchase for future verification
+  await Purchase.findByIdAndUpdate(newPurchase._id, { stripeSessionId: session.id })
 
   return {
     sessionUrl: session.url,
@@ -180,11 +206,68 @@ export const handleFailedPayment = async (purchaseId) => {
     return
   }
 
+  // Prevent marking a completed purchase as failed due to a delayed session expiration
+  if (purchaseData.status === PURCHASE_STATUS.COMPLETED) {
+    console.log(`Purchase ${purchaseId} is already completed. Ignoring failure/expiration.`)
+    return
+  }
+
   await Purchase.findByIdAndUpdate(purchaseId, {
     status: PURCHASE_STATUS.FAILED,
   })
 
   console.log(`❌ Purchase ${purchaseId} marked as failed`)
+}
+
+/**
+ * Verifies a Stripe checkout session and completes enrollment if payment succeeded.
+ * This handles the race condition where the client redirects back before the
+ * Stripe webhook fires.
+ *
+ * @param {string} sessionId - Stripe checkout session ID
+ * @param {string} userId - Clerk user ID (from auth, to prevent spoofing)
+ * @returns {{ alreadyEnrolled: boolean, enrolled: boolean }}
+ */
+export const verifyAndCompletePayment = async (sessionId, userId) => {
+  // 1. Retrieve the checkout session from Stripe
+  const session = await stripe.checkout.sessions.retrieve(sessionId)
+
+  if (!session) {
+    throw new AppError('Invalid session ID', 400)
+  }
+
+  // 2. Verify the session belongs to this user
+  const { purchaseId, userId: sessionUserId } = session.metadata || {}
+
+  if (sessionUserId !== userId) {
+    throw new AppError('Session does not belong to this user', 403)
+  }
+
+  if (!purchaseId) {
+    throw new AppError('No purchase associated with this session', 400)
+  }
+
+  // 3. Check if payment was actually successful
+  if (session.payment_status !== 'paid') {
+    throw new AppError('Payment has not been completed', 400)
+  }
+
+  // 4. Check if the purchase has already been completed
+  const purchaseData = await Purchase.findById(purchaseId)
+
+  if (!purchaseData) {
+    throw new AppError('Purchase record not found', 404)
+  }
+
+  if (purchaseData.status === PURCHASE_STATUS.COMPLETED) {
+    // Already enrolled (webhook got here first) — that's fine
+    return { alreadyEnrolled: true, enrolled: true }
+  }
+
+  // 5. Webhook hasn't fired yet — complete the enrollment ourselves
+  await handleSuccessfulPayment(purchaseId)
+
+  return { alreadyEnrolled: false, enrolled: true }
 }
 
 /**
@@ -201,7 +284,7 @@ export const adminCompletePurchase = async (userId, courseId) => {
     throw new AppError('User or course not found', 404)
   }
 
-  if (user.enrolledCourses.includes(courseId)) {
+  if (user.enrolledCourses.some(id => id.toString() === courseId.toString())) {
     throw new AppError('User already enrolled in this course', 409)
   }
 
@@ -224,9 +307,9 @@ export const adminCompletePurchase = async (userId, courseId) => {
 
       // Update or create purchase record
       await Purchase.findOneAndUpdate(
-        { userId, courseId, status: PURCHASE_STATUS.PENDING },
-        { status: PURCHASE_STATUS.COMPLETED },
-        { session }
+        { userId, courseId },
+        { status: PURCHASE_STATUS.COMPLETED, amount: 0 },
+        { session, upsert: true, setDefaultsOnInsert: true }
       )
     })
   } finally {

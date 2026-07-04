@@ -12,51 +12,14 @@ const MyEnrollments = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    // Check if user is returning from Stripe payment
+    // Show success toast if user just came from a successful payment
+    // (enrollment is already verified by the Loading page)
     const sessionId = searchParams.get('session_id');
     if (sessionId) {
-      console.log('🎉 Payment success detected:', sessionId);
-      console.log('📋 Current enrolled courses before refresh:', enrolledCourses.length);
-      
+      console.log('🎉 Payment success - enrollment already verified by Loading page');
       toast.success('Payment successful! Welcome to your new course!');
-      
-      // Multiple refresh attempts to ensure enrollment is captured
-      const refreshEnrollments = async () => {
-        console.log('🔄 Starting enrollment refresh sequence...');
-        
-        // First refresh immediately
-        if (fetchUserEnrolledCourses) {
-          await fetchUserEnrolledCourses();
-          console.log('✅ First enrollment refresh complete');
-        }
-        
-        if (fetchUserData) {
-          await fetchUserData();
-        }
-        
-        // Second refresh after 2 seconds (backend processing time)
-        setTimeout(async () => {
-          console.log('🔄 Second enrollment refresh attempt...');
-          if (fetchUserEnrolledCourses) {
-            await fetchUserEnrolledCourses();
-            console.log('✅ Second enrollment refresh complete');
-          }
-        }, 2000);
-        
-        // Final refresh after 5 seconds
-        setTimeout(async () => {
-          console.log('🔄 Final enrollment refresh attempt...');
-          if (fetchUserEnrolledCourses) {
-            await fetchUserEnrolledCourses();
-            console.log('✅ Final enrollment refresh complete');
-            console.log('📋 Final enrolled courses count:', enrolledCourses.length);
-          }
-        }, 5000);
-      };
-      
-      refreshEnrollments();
     }
-  }, [searchParams, fetchUserEnrolledCourses, fetchUserData]);
+  }, [searchParams]);
 
   const forceRefreshEnrollments = async () => {
     try {

@@ -46,3 +46,9 @@ export const adminCompletePurchaseSchema = z.object({
     courseId: z.string().regex(objectIdRegex, 'Invalid course ID format'),
   }),
 })
+
+export const verifyPaymentSchema = z.object({
+  body: z.object({
+    sessionId: z.string().min(1, 'Session ID is required'),
+  }),
+})
