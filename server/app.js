@@ -45,7 +45,10 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
 // ---------------------------------------------------------------------------
 // CORS — restricted to CLIENT_URL
-// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------")
+console.log("Node ENV : ",process.env.NODE_ENV);
+console.log("client url : ",process.env.CLIENT_URL);
+
 app.use(
   cors({
     origin: [

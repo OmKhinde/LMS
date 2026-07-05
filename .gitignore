@@ -257,3 +257,8 @@ dump.rdb
 # pnpm-lock.yaml
 
 implementation_plan.md
+architecture_flow.md
+database_flow.md
+er_diagram.md
+comprehensive_flowcharts.md
+MASTER_FLOW_HANDBOOK.md
