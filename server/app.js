@@ -51,10 +51,7 @@ console.log("client url : ",process.env.CLIENT_URL);
 
 app.use(
   cors({
-    origin: [
-      'http://localhost:5173',
-      process.env.CLIENT_URL,
-    ].filter(Boolean),
+    origin: true, // This dynamically reflects the requesting origin, allowing all domains
     credentials: true,
   })
 )
