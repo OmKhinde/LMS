@@ -33,6 +33,13 @@ const __dirname = path.dirname(__filename)
 const app = express()
 
 // ---------------------------------------------------------------------------
+// App Configuration
+// ---------------------------------------------------------------------------
+
+// Disable ETags to prevent 304 Not Modified responses
+app.set('etag', false)
+
+// ---------------------------------------------------------------------------
 // Security & Logging Middleware
 // ---------------------------------------------------------------------------
 app.use(
@@ -51,7 +58,7 @@ console.log("client url : ",process.env.CLIENT_URL);
 
 app.use(
   cors({
-    origin: true, // This dynamically reflects the requesting origin, allowing all domains
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
 )
